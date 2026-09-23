@@ -39,6 +39,17 @@ SCENARIOS: dict[str, tuple[dict[str, float], str, dict]] = {
             "settings": {"missing_dividend_yield": "zero"},
         },
     ),
+    "case_6_maximize_momentum": (
+        ALL_FIVE,
+        "optimize_factor_exposure",
+        {
+            "factors": True,
+            "factor_objective": {
+                "direction": "maximize",
+                "coefficients": {"momentum": 1},
+            },
+        },
+    ),
     "minimize_drawdown_demo": (ALL_FIVE, "minimize_drawdown", {}),
 }
 
@@ -70,10 +81,26 @@ def build_request(
         securities.append(security)
 
     request = {"securities": securities, "optimization_strategy": strategy}
-    for key in ("constraints", "settings"):
+    if extra.get("factors"):
+        request["factor_returns"] = _factor_returns(data)
+    for key in ("constraints", "settings", "factor_objective"):
         if key in extra:
             request[key] = extra[key]
     return request
+
+
+def _factor_returns(data: WorkbookData) -> list[dict]:
+    """One row per date with all three factors; the API aligns them with funds."""
+    wide = data.factor_returns.pivot(
+        index="date", columns="index_ticker", values="total_return"
+    ).dropna()
+    return [
+        {
+            "date": day.date().isoformat(),
+            **{name: float(row[name]) for name in ("momentum", "value", "size")},
+        }
+        for day, row in wide.sort_index().iterrows()
+    ]
 
 
 def _optional(value: float) -> float | None:

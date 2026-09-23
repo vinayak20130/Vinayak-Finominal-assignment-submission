@@ -5,8 +5,10 @@ Python REST API for the Finominal backend assignment.
 ## Current status
 
 Implemented: workbook validation, date alignment, core portfolio metrics, and
-`POST /optimize` with `equal_weights` and `risk_parity`.
-Other strategies and factor regression are not implemented yet.
+`POST /optimize` with all five required strategies (`equal_weights`,
+`risk_parity`, `minimize_drawdown`, `minimize_volatility`, and
+`maximize_sharpe_ratio`) plus the optional `optimize_factor_exposure` strategy
+with Momentum, Value, and Size factor betas.
 Reference-tool comparisons have not been performed.
 
 ## Setup
@@ -67,9 +69,11 @@ data; no external ticker lookup or database is used. Switch
 `optimization_strategy` to `risk_parity` to target equal risk contributions.
 
 Assignment scenarios are committed as complete requests in `examples/`
-(`case_1_equal_weights.json` to `case_5_maximize_sharpe_constrained.json`, plus
+(`case_1_equal_weights.json` to `case_6_maximize_momentum.json`, plus
 `minimize_drawdown_demo.json`). They contain the full supplied return history,
-so they run without the workbook. For example, case 2:
+and case 6 also contains the supplied factor returns, so they run without the
+workbook. `tests/test_scenarios.py` runs every example and checks the
+assignment's acceptance rules. For example, case 2:
 
 ```bash
 curl --fail-with-body http://127.0.0.1:8000/optimize \
@@ -99,6 +103,27 @@ uv run --locked python -m scripts.build_requests
   from equal shares using deterministic multistart SLSQP. Constrained solutions
   may be approximate; the response reports this explicitly. Zero-risk assets
   are rejected for this strategy because equal risk shares are undefined.
+- Minimize Drawdown minimizes the largest historical loss from a prior portfolio
+  wealth peak, using compounded portfolio returns. Deterministic multistart SLSQP
+  improves the search, but its nonsmooth objective means convergence does not
+  certify a global minimum. Failed solves never silently return a starting allocation.
+- Minimize Volatility minimizes annualized sample variance using its analytic
+  gradient. Positive objective scaling improves numerical conditioning without
+  changing the minimizer. With only linear constraints the problem is convex;
+  additional nonlinear constraints can introduce local optima.
+- Maximize Sharpe uses arithmetic mean excess return divided by sample volatility,
+  with an analytic gradient and deterministic multistart SLSQP. An annual effective
+  risk-free rate is converted to a period rate before calculation. Zero or near-zero
+  volatility is treated as undefined; no epsilon is added to fabricate a ratio.
+  Final Sharpe is independently recomputed from the portfolio return series.
+- Factor exposure regresses portfolio returns on Momentum, Value, and Size with an
+  intercept (OLS), using only dates shared by the selected funds and the supplied
+  factor returns; that window is reported separately as `factor_window`. With
+  fixed weights, portfolio betas are weighted fund betas, so the objective is
+  linear and solved exactly with HiGHS unless nonlinear portfolio constraints
+  apply. No diversification caps are added: 100% in the highest-beta fund is a
+  valid answer. Supplying `factor_returns` with any other strategy reports
+  `factor_betas` without changing its optimization.
 - SLSQP uses `ftol=1e-12`, `maxiter=2000`, and `eps=1e-8`.
   Nonlinear slacks are scaled during solving and checked in original units
   afterward, with an absolute feasibility tolerance of `1e-8`.
@@ -107,6 +132,12 @@ Optional `min_weight`/`max_weight` belong to each security. Portfolio
 `constraints` accepts `min_cagr`, `min_volatility`, `max_volatility`,
 `max_drawdown`, and `min_dividend_yield`. Equal weights reports a conflict if
 its fixed allocation violates a requested constraint.
+
+`optimize_factor_exposure` requires `factor_returns` (a list of
+`{"date", "momentum", "value", "size"}` decimal returns, at least five dates) and
+`factor_objective`, for example
+`{"direction": "maximize", "coefficients": {"momentum": 1}}`. Coefficients weight
+several factors at once; omitted factors count as zero.
 
 Missing dividend yield remains unknown. A yield constraint requires known yields
 or explicit `settings.missing_dividend_yield: "zero"`, which produces a warning.
