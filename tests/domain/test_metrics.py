@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pytest
 
@@ -182,3 +184,10 @@ def test_invalid_dividend_yields(yields):
 def test_indefinite_covariance_is_rejected():
     with pytest.raises(DataValidationError, match="positive semidefinite"):
         portfolio_variance([[1, 2], [2, 1]], [0.5, 0.5])
+
+
+def test_drawdown_without_loss_is_positive_zero():
+    # -0.0 would serialize as "-0.0" in API responses.
+    result = maximum_drawdown([0.01, 0.02])
+    assert result == 0
+    assert math.copysign(1, result) == 1

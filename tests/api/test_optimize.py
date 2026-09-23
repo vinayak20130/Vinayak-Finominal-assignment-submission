@@ -236,3 +236,26 @@ def test_missing_yield_zero_policy_is_explicit_and_warned(request_body):
 
 def test_every_advertised_strategy_is_implemented():
     assert set(STRATEGIES) == set(Strategy)
+
+
+def test_malformed_json_names_the_body():
+    with TestClient(app) as client:
+        response = client.post(
+            "/optimize",
+            content=b"{not json",
+            headers={"content-type": "application/json"},
+        )
+
+    error = assert_error(response, 422, "invalid_input")
+
+    assert error["details"][0]["field"] == "body"
+
+
+def test_routing_errors_use_the_error_envelope():
+    with TestClient(app) as client:
+        wrong_method = client.get("/optimize")
+        unknown_path = client.get("/does-not-exist")
+
+    assert_error(wrong_method, 405, "method_not_allowed")
+    assert "POST" in wrong_method.headers["allow"]
+    assert_error(unknown_path, 404, "not_found")

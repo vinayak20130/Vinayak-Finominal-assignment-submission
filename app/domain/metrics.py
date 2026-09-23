@@ -120,7 +120,8 @@ def maximum_drawdown(returns: ArrayLike) -> float:
     log_wealth = _log_wealth(returns)
     log_peaks = np.maximum.accumulate(log_wealth)
     # Log differences avoid overflow/underflow in wealth-to-peak ratios.
-    drawdowns = -np.expm1(log_wealth - log_peaks)
+    # 0.0 - x rather than -x, so a path with no loss reports 0.0, not -0.0.
+    drawdowns = 0.0 - np.expm1(log_wealth - log_peaks)
     return _finite(np.max(drawdowns), "Maximum drawdown")
 
 

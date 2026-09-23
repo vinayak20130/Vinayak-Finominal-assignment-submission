@@ -9,6 +9,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.domain.errors import (
     DataValidationError,
@@ -31,6 +32,8 @@ DOMAIN_ERRORS: dict[type[Exception], tuple[int, str]] = {
     OptimizationFailedError: (500, "optimization_failed"),
 }
 
+HTTP_ERROR_CODES = {404: "not_found", 405: "method_not_allowed"}
+
 
 def error_response(
     status: int, code: str, message: str, details: list[dict] | None = None
@@ -41,14 +44,17 @@ def error_response(
 
 async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
     details = [
-        {
-            # Drop the leading "body" segment so fields read like request paths.
-            "field": ".".join(str(part) for part in error["loc"][1:]) or "body",
-            "message": error["msg"],
-        }
-        for error in exc.errors()
+        {"field": _field(error), "message": error["msg"]} for error in exc.errors()
     ]
     return error_response(422, "invalid_input", "Request validation failed.", details)
+
+
+def _field(error: dict) -> str:
+    # A JSON decode error's location holds a character offset, not a field name.
+    if error["type"] == "json_invalid":
+        return "body"
+    # Drop the leading "body" segment so fields read like request paths.
+    return ".".join(str(part) for part in error["loc"][1:]) or "body"
 
 
 def _domain_handler(status: int, code: str):
@@ -58,6 +64,15 @@ def _domain_handler(status: int, code: str):
     return handle
 
 
+async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Wrap routing errors (unknown path, wrong method) in the same envelope."""
+    code = HTTP_ERROR_CODES.get(exc.status_code, "http_error")
+    response = error_response(exc.status_code, code, str(exc.detail))
+    # Keep headers such as Allow on 405 responses.
+    response.headers.update(exc.headers or {})
+    return response
+
+
 async def _unexpected_error(_: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled error", exc_info=exc)
     return error_response(500, "internal_error", "An unexpected error occurred.")
@@ -65,6 +80,7 @@ async def _unexpected_error(_: Request, exc: Exception) -> JSONResponse:
 
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, _validation_error)
+    app.add_exception_handler(StarletteHTTPException, _http_error)
     for error_type, (status, code) in DOMAIN_ERRORS.items():
         app.add_exception_handler(error_type, _domain_handler(status, code))
     app.add_exception_handler(Exception, _unexpected_error)
