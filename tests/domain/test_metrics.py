@@ -6,7 +6,10 @@ from app.domain.metrics import (
     annualized_volatility,
     cagr,
     maximum_drawdown,
+    portfolio_dividend_yield,
     portfolio_returns,
+    portfolio_variance,
+    risk_shares,
     sample_covariance,
     sharpe_ratio,
     wealth_index,
@@ -126,3 +129,51 @@ def test_insufficient_observations(metric):
 def test_invalid_risk_free_rate(rate):
     with pytest.raises(DataValidationError):
         sharpe_ratio([0.01, 0.02], risk_free_rate=rate)
+
+
+RETURNS = [[0.01, -0.002], [-0.02, 0.004], [0.015, 0.001], [0.003, -0.003]]
+
+
+def test_covariance_variance_matches_fixed_weight_returns():
+    weights = [0.3, 0.7]
+    expected = np.var(portfolio_returns(RETURNS, weights), ddof=1)
+    variance = portfolio_variance(sample_covariance(RETURNS), weights)
+    assert variance == pytest.approx(expected)
+
+
+def test_risk_shares_sum_to_one():
+    shares = risk_shares(sample_covariance(RETURNS), [0.3, 0.7])
+    assert shares.sum() == pytest.approx(1)
+
+
+def test_two_asset_inverse_volatility_equalizes_risk():
+    # For two assets, equal risk contribution is exactly inverse volatility,
+    # whatever the correlation.
+    covariance = sample_covariance(RETURNS)
+    inverse = 1 / np.sqrt(np.diag(covariance))
+    shares = risk_shares(covariance, inverse / inverse.sum())
+    np.testing.assert_allclose(shares, [0.5, 0.5])
+
+
+def test_risk_shares_undefined_at_zero_variance():
+    with pytest.raises(UndefinedMetricError):
+        risk_shares([[0.0, 0.0], [0.0, 0.0]], [0.5, 0.5])
+
+
+@pytest.mark.parametrize(
+    "covariance",
+    [[[1.0, 0.2], [0.1, 1.0]], [[1.0, 0.0]], [[float("nan"), 0], [0, 1]], [["a"]]],
+)
+def test_invalid_covariance(covariance):
+    with pytest.raises(DataValidationError):
+        portfolio_variance(covariance, [0.5, 0.5])
+
+
+def test_dividend_yield_is_weighted_sum():
+    assert portfolio_dividend_yield([0.04, 0.02], [0.5, 0.5]) == pytest.approx(0.03)
+
+
+@pytest.mark.parametrize("yields", [[0.02, float("nan")], [0.02, -0.01], []])
+def test_invalid_dividend_yields(yields):
+    with pytest.raises(DataValidationError):
+        portfolio_dividend_yield(yields, [0.5, 0.5])

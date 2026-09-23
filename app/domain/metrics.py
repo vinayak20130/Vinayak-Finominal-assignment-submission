@@ -36,11 +36,12 @@ def _finite(value: float, metric: str) -> float:
     return float(value)
 
 
-def portfolio_returns(returns: ArrayLike, weights: ArrayLike) -> NDArray[np.float64]:
-    """Fixed target weights rebalanced at every observation; weights are fractions."""
-    values = _returns(returns, matrix=True)
-    allocation = np.asarray(weights, dtype=np.float64)
-    if allocation.ndim != 1 or len(allocation) != values.shape[1]:
+def _weights(weights: ArrayLike, count: int) -> NDArray[np.float64]:
+    try:
+        allocation = np.asarray(weights, dtype=np.float64)
+    except (ValueError, TypeError) as exc:
+        raise DataValidationError("Weights must be numeric.") from exc
+    if allocation.ndim != 1 or len(allocation) != count:
         raise DataValidationError("Provide one weight per return column.")
     if (
         not np.isfinite(allocation).all()
@@ -49,6 +50,25 @@ def portfolio_returns(returns: ArrayLike, weights: ArrayLike) -> NDArray[np.floa
         or not np.isclose(allocation.sum(), 1, atol=1e-8, rtol=0)
     ):
         raise DataValidationError("Weights must be nonnegative fractions summing to 1.")
+    return allocation
+
+
+def _covariance(covariance: ArrayLike) -> NDArray[np.float64]:
+    try:
+        matrix = np.asarray(covariance, dtype=np.float64)
+    except (ValueError, TypeError) as exc:
+        raise DataValidationError("Covariance must be numeric.") from exc
+    if matrix.ndim != 2 or matrix.size == 0 or matrix.shape[0] != matrix.shape[1]:
+        raise DataValidationError("Covariance must be a nonempty square matrix.")
+    if not np.isfinite(matrix).all() or not np.allclose(matrix, matrix.T):
+        raise DataValidationError("Covariance must be finite and symmetric.")
+    return matrix
+
+
+def portfolio_returns(returns: ArrayLike, weights: ArrayLike) -> NDArray[np.float64]:
+    """Fixed target weights rebalanced at every observation; weights are fractions."""
+    values = _returns(returns, matrix=True)
+    allocation = _weights(weights, values.shape[1])
     with np.errstate(over="ignore", invalid="ignore"):
         result = values @ allocation
     if not np.isfinite(result).all():
@@ -127,3 +147,35 @@ def sharpe_ratio(
     period_risk_free = np.expm1(np.log1p(risk_free_rate) / annualization)
     ratio = (values.mean() - period_risk_free) / period_volatility
     return _finite(ratio * np.sqrt(annualization), "Sharpe ratio")
+
+
+def portfolio_variance(covariance: ArrayLike, weights: ArrayLike) -> float:
+    """Fixed-weight portfolio variance, in the same units as the covariance."""
+    matrix = _covariance(covariance)
+    allocation = _weights(weights, len(matrix))
+    # A valid covariance gives a nonnegative result; clip float rounding below zero.
+    return _finite(max(allocation @ matrix @ allocation, 0.0), "Portfolio variance")
+
+
+def risk_shares(covariance: ArrayLike, weights: ArrayLike) -> NDArray[np.float64]:
+    """Fraction of portfolio variance contributed by each asset; shares sum to 1."""
+    matrix = _covariance(covariance)
+    allocation = _weights(weights, len(matrix))
+    variance = portfolio_variance(matrix, allocation)
+    if variance <= MIN_PERIOD_VOLATILITY**2:
+        raise UndefinedMetricError("Risk shares are undefined at zero variance.")
+    return allocation * (matrix @ allocation) / variance
+
+
+def portfolio_dividend_yield(yields: ArrayLike, weights: ArrayLike) -> float:
+    """Weighted yield of target weights; every yield must be a known decimal."""
+    try:
+        values = np.asarray(yields, dtype=np.float64)
+    except (ValueError, TypeError) as exc:
+        raise DataValidationError("Dividend yields must be numeric.") from exc
+    if values.ndim != 1 or values.size == 0:
+        raise DataValidationError("Provide a nonempty list of dividend yields.")
+    # NaN marks a missing yield; the caller resolves its policy before this point.
+    if not np.isfinite(values).all() or (values < 0).any():
+        raise DataValidationError("Dividend yields must be known and nonnegative.")
+    return float(values @ _weights(weights, len(values)))

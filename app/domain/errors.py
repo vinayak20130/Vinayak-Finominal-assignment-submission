@@ -8,3 +8,15 @@ class InsufficientDataError(DataValidationError):
 
 class UndefinedMetricError(ValueError):
     """The requested metric has no finite, defined value."""
+
+
+class InfeasibleConstraintsError(ValueError):
+    """The requested constraints provably admit no valid allocation."""
+
+
+class EqualWeightConflictError(ValueError):
+    """Equal weights violate a supplied bound or portfolio constraint."""
+
+
+class OptimizationFailedError(RuntimeError):
+    """No verified feasible solution was found; infeasibility is not proven."""
