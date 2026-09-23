@@ -186,13 +186,30 @@ def test_equal_weights_conflicting_with_bound(request_body):
 
 
 def test_equal_weights_conflicting_with_portfolio_constraint(request_body):
+    # 1.8% is attainable (up to 2%), but equal weights only yield 1.5%.
     for item, value in zip(request_body["securities"], [0.01, 0.02], strict=True):
         item["dividend_yield"] = value
-    request_body["constraints"] = {"min_dividend_yield": 0.05}
+    request_body["constraints"] = {"min_dividend_yield": 0.018}
 
     error = assert_error(post(request_body), 422, "equal_weight_conflict")
 
     assert "min_dividend_yield" in error["message"]
+
+
+def test_impossible_bounds_are_infeasible_for_equal_weights(request_body):
+    # Minimums total 120%, so no strategy could satisfy them.
+    for item in request_body["securities"]:
+        item["min_weight"] = 60
+
+    assert_error(post(request_body), 422, "infeasible_constraints")
+
+
+def test_unattainable_yield_is_infeasible_for_equal_weights(request_body):
+    for item, value in zip(request_body["securities"], [0.01, 0.02], strict=True):
+        item["dividend_yield"] = value
+    request_body["constraints"] = {"min_dividend_yield": 0.05}
+
+    assert_error(post(request_body), 422, "infeasible_constraints")
 
 
 def test_missing_yield_needed_by_constraint_is_an_error(request_body):

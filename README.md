@@ -66,14 +66,22 @@ This example returns 50% for each asset. Tickers are identifiers for supplied
 data; no external ticker lookup or database is used. Switch
 `optimization_strategy` to `risk_parity` to target equal risk contributions.
 
-To generate assignment case 2 from the local workbook:
+Assignment scenarios are committed as complete requests in `examples/`
+(`case_1_equal_weights.json` to `case_5_maximize_sharpe_constrained.json`, plus
+`minimize_drawdown_demo.json`). They contain the full supplied return history,
+so they run without the workbook. For example, case 2:
 
 ```bash
-uv run --locked python -m scripts.build_requests --out /tmp/finominal-requests
-curl --fail-with-body http://127.0.0.1:8000/optimize -H 'Content-Type: application/json' --data-binary @/tmp/finominal-requests/case_2_risk_parity.json
+curl --fail-with-body http://127.0.0.1:8000/optimize \
+  -H 'Content-Type: application/json' \
+  --data-binary @examples/case_2_risk_parity.json
 ```
 
-Generated workbook requests should stay outside Git alongside the local inputs.
+Only regenerating these files needs the local `Data.xlsx`:
+
+```bash
+uv run --locked python -m scripts.build_requests
+```
 
 ## Units and methodology
 

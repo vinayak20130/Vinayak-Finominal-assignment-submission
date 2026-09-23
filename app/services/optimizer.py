@@ -34,11 +34,16 @@ from app.schemas.response import (
     SolverInfo,
 )
 from app.services.registry import get_strategy
+from app.strategies.feasibility import linear_solution
 
 
 def optimize(request: OptimizationRequest) -> OptimizationResponse:
     aligned = _align(request)
     problem, warnings = _build_problem(request, aligned.to_numpy())
+
+    # Impossible weight bounds or yield floors are infeasible for every strategy,
+    # so prove that before any strategy-specific error can mask it.
+    linear_solution(problem, np.zeros(problem.size))
 
     result = get_strategy(request.optimization_strategy)(problem)
 
