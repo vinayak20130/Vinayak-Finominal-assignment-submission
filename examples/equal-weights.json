@@ -1,0 +1,35 @@
+{
+  "securities": [
+    {
+      "ticker": "AAA",
+      "security_name": "Synthetic Asset A",
+      "current_weight": 25,
+      "returns": [
+        {
+          "date": "2025-01-02",
+          "return": 0.01
+        },
+        {
+          "date": "2025-01-03",
+          "return": -0.005
+        }
+      ]
+    },
+    {
+      "ticker": "BBB",
+      "security_name": "Synthetic Asset B",
+      "current_weight": 75,
+      "returns": [
+        {
+          "date": "2025-01-02",
+          "return": -0.002
+        },
+        {
+          "date": "2025-01-03",
+          "return": 0.004
+        }
+      ]
+    }
+  ],
+  "optimization_strategy": "equal_weights"
+}

@@ -4,9 +4,9 @@ Python REST API for the Finominal backend assignment.
 
 ## Current status
 
-Basic project initialization only: FastAPI application, health endpoint, interactive
-API documentation, locked dependencies, and a health endpoint test.
-Optimization strategies and workbook processing are not implemented yet.
+Implemented: workbook validation, date alignment, core portfolio metrics, and
+`POST /optimize` with `equal_weights` and `risk_parity`.
+Other strategies and factor regression are not implemented yet.
 Reference-tool comparisons have not been performed.
 
 ## Setup
@@ -50,4 +50,65 @@ uv run --locked ruff format --check .
 
 The supplied assignment document and `Data.xlsx` are kept locally and are not
 included in the repository. Neither file is needed to run the health endpoint.
-The planned `POST /optimize` endpoint is not available in this scaffold yet.
+The tests use synthetic data and do not need the workbook.
+
+## Optimize
+
+With the server running:
+
+```bash
+curl --fail-with-body http://127.0.0.1:8000/optimize \
+  -H 'Content-Type: application/json' \
+  --data-binary @examples/equal-weights.json
+```
+
+This example returns 50% for each asset. Tickers are identifiers for supplied
+data; no external ticker lookup or database is used. Switch
+`optimization_strategy` to `risk_parity` to target equal risk contributions.
+
+To generate assignment case 2 from the local workbook:
+
+```bash
+uv run --locked python -m scripts.build_requests --out /tmp/finominal-requests
+curl --fail-with-body http://127.0.0.1:8000/optimize -H 'Content-Type: application/json' --data-binary @/tmp/finominal-requests/case_2_risk_parity.json
+```
+
+Generated workbook requests should stay outside Git alongside the local inputs.
+
+## Units and methodology
+
+- Request/response weights and weight bounds are percentages: 20 means 20%.
+- Returns, yields, and portfolio constraints are decimals: 0.025 means 2.5%.
+- Returns are already total returns. No price conversion or dividend addition is applied.
+- Dates are sorted and intersected for only the selected securities; missing returns
+  are never filled with zero. At least two common observations are required.
+- Fixed weights rebalance each observation. Daily annualization defaults to 252.
+  Volatility/covariance use sample estimates (`ddof=1`).
+- CAGR uses observation count divided by annualization factor for elapsed years.
+  Drawdown includes initial wealth. Sharpe uses arithmetic excess returns and
+  defaults to a zero risk-free rate; undefined reporting metrics are null.
+- Risk parity minimizes squared deviations of fractional variance contributions
+  from equal shares using deterministic multistart SLSQP. Constrained solutions
+  may be approximate; the response reports this explicitly. Zero-risk assets
+  are rejected for this strategy because equal risk shares are undefined.
+- SLSQP uses `ftol=1e-12`, `maxiter=2000`, and `eps=1e-8`.
+  Nonlinear slacks are scaled during solving and checked in original units
+  afterward, with an absolute feasibility tolerance of `1e-8`.
+
+Optional `min_weight`/`max_weight` belong to each security. Portfolio
+`constraints` accepts `min_cagr`, `min_volatility`, `max_volatility`,
+`max_drawdown`, and `min_dividend_yield`. Equal weights reports a conflict if
+its fixed allocation violates a requested constraint.
+
+Missing dividend yield remains unknown. A yield constraint requires known yields
+or explicit `settings.missing_dividend_yield: "zero"`, which produces a warning.
+The response includes actual analysis dates, methodology, solver status, metrics,
+constraint residuals, and warnings.
+
+Invalid input, equal-weight conflicts, and proven infeasibility return HTTP 422.
+Numerical failure returns HTTP 500 with `optimization_failed`; failing to find a
+nonlinear feasible allocation is not treated as proof that none exists.
+Errors use `{"error": {"code": "...", "message": "...", "details": []}}`.
+
+These financial conventions are local assumptions and have not been verified
+against the live reference tool.

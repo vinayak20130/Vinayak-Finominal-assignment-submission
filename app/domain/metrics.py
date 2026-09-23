@@ -62,6 +62,9 @@ def _covariance(covariance: ArrayLike) -> NDArray[np.float64]:
         raise DataValidationError("Covariance must be a nonempty square matrix.")
     if not np.isfinite(matrix).all() or not np.allclose(matrix, matrix.T):
         raise DataValidationError("Covariance must be finite and symmetric.")
+    tolerance = 10 * np.finfo(float).eps * len(matrix) * np.linalg.norm(matrix, 2)
+    if np.linalg.eigvalsh(matrix).min() < -tolerance:
+        raise DataValidationError("Covariance must be positive semidefinite.")
     return matrix
 
 

@@ -177,3 +177,8 @@ def test_dividend_yield_is_weighted_sum():
 def test_invalid_dividend_yields(yields):
     with pytest.raises(DataValidationError):
         portfolio_dividend_yield(yields, [0.5, 0.5])
+
+
+def test_indefinite_covariance_is_rejected():
+    with pytest.raises(DataValidationError, match="positive semidefinite"):
+        portfolio_variance([[1, 2], [2, 1]], [0.5, 0.5])

@@ -26,6 +26,13 @@ def constraint_residuals(
     constraints are checked only when requested.
     """
     w = np.asarray(weights, dtype=np.float64)
+    if (
+        w.shape != (problem.size,)
+        or not np.isfinite(w).all()
+        or (w < 0).any()
+        or (w > 1).any()
+    ):
+        return {"valid_weights": -np.inf}
     residuals = {
         # 0.0 - x rather than -x, so an exact sum reports 0.0, not -0.0.
         "weights_sum_to_one": 0.0 - abs(float(w.sum()) - 1.0),
@@ -55,7 +62,11 @@ def constraint_residuals(
 
 
 def violated(residuals: dict[str, float]) -> list[str]:
-    return [name for name, slack in residuals.items() if slack < -FEASIBILITY_TOLERANCE]
+    return [
+        name
+        for name, slack in residuals.items()
+        if not np.isfinite(slack) or slack < -FEASIBILITY_TOLERANCE
+    ]
 
 
 def _metric(function, returns, factor) -> float:
