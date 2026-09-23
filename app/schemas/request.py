@@ -125,17 +125,52 @@ class CalculationSettings(StrictModel):
         return self
 
 
+FactorName = Literal["momentum", "value", "size"]
+
+
+class FactorObservation(StrictModel):
+    date: IsoDate
+    momentum: Number
+    value: Number
+    size: Number
+
+
+class FactorObjective(StrictModel):
+    direction: Literal["maximize", "minimize"]
+    coefficients: dict[FactorName, Number] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _nonzero_coefficients(self) -> "FactorObjective":
+        if not any(value != 0 for value in self.coefficients.values()):
+            raise ValueError("At least one factor coefficient must be nonzero.")
+        return self
+
+
 class OptimizationRequest(StrictModel):
     securities: list[SecurityInput] = Field(min_length=2)
     optimization_strategy: Strategy
     constraints: PortfolioConstraints = Field(default_factory=PortfolioConstraints)
     settings: CalculationSettings = Field(default_factory=CalculationSettings)
+    factor_returns: list[FactorObservation] | None = Field(default=None, min_length=5)
+    factor_objective: FactorObjective | None = None
 
     @model_validator(mode="after")
     def _check_portfolio(self) -> "OptimizationRequest":
         tickers = [security.ticker for security in self.securities]
         if len(tickers) != len(set(tickers)):
             raise ValueError("Tickers must be unique.")
+        if self.optimization_strategy == Strategy.OPTIMIZE_FACTOR_EXPOSURE:
+            if self.factor_returns is None or self.factor_objective is None:
+                raise ValueError(
+                    "optimize_factor_exposure requires factor_returns "
+                    "and factor_objective."
+                )
+        elif self.factor_objective is not None:
+            raise ValueError("factor_objective requires optimize_factor_exposure.")
+        if self.factor_returns is not None:
+            dates = [row.date for row in self.factor_returns]
+            if len(dates) != len(set(dates)):
+                raise ValueError("Duplicate factor return dates.")
         total = sum(security.current_weight for security in self.securities)
         if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
             raise ValueError(f"Current weights must sum to 100 (got {total:g}).")

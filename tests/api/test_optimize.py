@@ -1,9 +1,9 @@
-import copy
-
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.schemas.request import Strategy
+from app.services.registry import STRATEGIES
 
 DATES = ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07"]
 
@@ -234,10 +234,5 @@ def test_missing_yield_zero_policy_is_explicit_and_warned(request_body):
     assert any("BBB" in warning for warning in body["warnings"])
 
 
-def test_unimplemented_strategy_is_rejected_clearly(request_body):
-    body = copy.deepcopy(request_body)
-    body["optimization_strategy"] = "optimize_factor_exposure"
-
-    error = assert_error(post(body), 422, "invalid_input")
-
-    assert "optimize_factor_exposure" in error["message"]
+def test_every_advertised_strategy_is_implemented():
+    assert set(STRATEGIES) == set(Strategy)

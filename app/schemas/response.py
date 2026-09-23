@@ -52,6 +52,17 @@ class MetricsComparison(BaseModel):
     optimized_portfolio: PortfolioMetrics
 
 
+class BetaValues(BaseModel):
+    momentum: float
+    value: float
+    size: float
+
+
+class FactorBetas(BaseModel):
+    current_portfolio: BetaValues
+    optimized_portfolio: BetaValues
+
+
 class OptimizationResponse(BaseModel):
     optimization_strategy: Strategy
     allocation_changes: list[AllocationChange]
@@ -62,3 +73,5 @@ class OptimizationResponse(BaseModel):
     # Slack per checked constraint; nonnegative (within tolerance) means satisfied.
     constraint_residuals: dict[str, float]
     warnings: list[str]
+    factor_betas: FactorBetas | None = None
+    factor_window: DataWindow | None = None

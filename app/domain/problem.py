@@ -37,6 +37,7 @@ class OptimizationProblem:
     constraints: PortfolioConstraints
     annualization_factor: int = 252
     risk_free_rate: float = 0.0
+    factor_costs: NDArray[np.float64] | None = None
 
     @property
     def size(self) -> int:

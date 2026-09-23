@@ -4,6 +4,8 @@ Flow: align returns -> build problem -> run strategy -> independently verify
 every constraint -> report weights, metrics, and methodology.
 """
 
+from dataclasses import replace
+
 import numpy as np
 import pandas as pd
 
@@ -33,6 +35,7 @@ from app.schemas.response import (
     PortfolioMetrics,
     SolverInfo,
 )
+from app.services.factors import exposure_costs, prepare_factors
 from app.services.registry import get_strategy
 from app.strategies.feasibility import linear_solution
 
@@ -40,6 +43,9 @@ from app.strategies.feasibility import linear_solution
 def optimize(request: OptimizationRequest) -> OptimizationResponse:
     aligned = _align(request)
     problem, warnings = _build_problem(request, aligned.to_numpy())
+    factors = prepare_factors(request, aligned)
+    if request.factor_objective is not None:
+        problem = replace(problem, factor_costs=exposure_costs(request, factors))
 
     # Impossible weight bounds or yield floors are infeasible for every strategy,
     # so prove that before any strategy-specific error can mask it.
@@ -78,6 +84,12 @@ def optimize(request: OptimizationRequest) -> OptimizationResponse:
         ),
         constraint_residuals=residuals,
         warnings=warnings + result.warnings,
+        factor_betas=(
+            factors.compare(problem.current_weights, result.weights)
+            if factors
+            else None
+        ),
+        factor_window=factors.window if factors else None,
     )
 
 
