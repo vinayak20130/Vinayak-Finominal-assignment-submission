@@ -81,7 +81,14 @@ curl --fail-with-body http://127.0.0.1:8000/optimize \
   --data-binary @examples/case_2_risk_parity.json
 ```
 
-Only regenerating these files needs the local `Data.xlsx`:
+The API's response to every example is saved in `validation/responses/`. To
+regenerate them, start the server and run:
+
+```bash
+uv run --locked python -m scripts.run_scenarios
+```
+
+Only regenerating the request files needs the local `Data.xlsx`:
 
 ```bash
 uv run --locked python -m scripts.build_requests

@@ -1,0 +1,83 @@
+{
+  "optimization_strategy": "maximize_sharpe_ratio",
+  "allocation_changes": [
+    {
+      "ticker": "IEFA",
+      "security_name": "iShares Core MSCI EAFE ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 4.316036225376942e-14,
+      "change": -19.999999999999957
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 20.0,
+      "optimized_weight": 20.097048318114194,
+      "change": 0.09704831811419368
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 34.35697119939288,
+      "change": 14.35697119939288
+    },
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 7.574620760576764e-14,
+      "change": -19.999999999999925
+    },
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 20.0,
+      "optimized_weight": 45.54598048249281,
+      "change": 25.54598048249281
+    }
+  ],
+  "window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-27",
+    "observations": 3414
+  },
+  "methodology": {
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "error"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.08670519264397522,
+      "volatility": 0.10870228566062105,
+      "sharpe_ratio": 0.8195471670371077,
+      "max_drawdown": 0.2228375849513795,
+      "dividend_yield": null
+    },
+    "optimized_portfolio": {
+      "cagr": 0.09241511685501327,
+      "volatility": 0.08976107763998092,
+      "sharpe_ratio": 1.0298351755610184,
+      "max_drawdown": 0.18060996341454938,
+      "dividend_yield": null
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": 4.3160362253769423e-16,
+    "max_weight": 0.5445401951750719
+  },
+  "warnings": [
+    "Portfolio dividend yield is unavailable; missing for: GLD.",
+    "Multistart Sharpe optimization does not certify a global maximum."
+  ],
+  "factor_betas": null,
+  "factor_window": null
+}

@@ -1,0 +1,97 @@
+{
+  "optimization_strategy": "optimize_factor_exposure",
+  "allocation_changes": [
+    {
+      "ticker": "IEFA",
+      "security_name": "iShares Core MSCI EAFE ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 0.0,
+      "change": -20.0
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 20.0,
+      "optimized_weight": 0.0,
+      "change": -20.0
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 0.0,
+      "change": -20.0
+    },
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 100.0,
+      "change": 80.0
+    },
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 20.0,
+      "optimized_weight": 0.0,
+      "change": -20.0
+    }
+  ],
+  "window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-27",
+    "observations": 3414
+  },
+  "methodology": {
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "error"
+  },
+  "solver": {
+    "method": "HiGHS",
+    "status": "optimal"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.08670519264397522,
+      "volatility": 0.10870228566062105,
+      "sharpe_ratio": 0.8195471670371077,
+      "max_drawdown": 0.2228375849513795,
+      "dividend_yield": null
+    },
+    "optimized_portfolio": {
+      "cagr": 0.08921768550244141,
+      "volatility": 0.16716120596871795,
+      "sharpe_ratio": 0.5953980236791367,
+      "max_drawdown": 0.35724391954468193,
+      "dividend_yield": null
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": 0.0,
+    "max_weight": 0.0
+  },
+  "warnings": [
+    "Portfolio dividend yield is unavailable; missing for: GLD."
+  ],
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.13157439837643392,
+      "value": 0.1651383870199605,
+      "size": -0.05760774676787524
+    },
+    "optimized_portfolio": {
+      "momentum": 0.1873100795087515,
+      "value": 0.3503316910980178,
+      "size": -0.055874418444193996
+    }
+  },
+  "factor_window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-22",
+    "observations": 3412
+  }
+}

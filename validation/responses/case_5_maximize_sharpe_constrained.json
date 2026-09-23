@@ -1,0 +1,84 @@
+{
+  "optimization_strategy": "maximize_sharpe_ratio",
+  "allocation_changes": [
+    {
+      "ticker": "IEFA",
+      "security_name": "iShares Core MSCI EAFE ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 14.679878026343543,
+      "change": -5.320121973656457
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 20.0,
+      "optimized_weight": 7.139412926396119,
+      "change": -12.860587073603881
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 39.999999999999915,
+      "change": 19.999999999999915
+    },
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 20.0,
+      "optimized_weight": 4.999999999999989,
+      "change": -15.00000000000001
+    },
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 20.0,
+      "optimized_weight": 33.18070904726043,
+      "change": 13.180709047260429
+    }
+  ],
+  "window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-27",
+    "observations": 3414
+  },
+  "methodology": {
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.08670519264397522,
+      "volatility": 0.10870228566062105,
+      "sharpe_ratio": 0.8195471670371077,
+      "max_drawdown": 0.2228375849513795,
+      "dividend_yield": 0.020546000000000002
+    },
+    "optimized_portfolio": {
+      "cagr": 0.08203339382029663,
+      "volatility": 0.09226126372537505,
+      "sharpe_ratio": 0.9009143954505683,
+      "max_drawdown": 0.20291475816277593,
+      "dividend_yield": 0.02499999999999998
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": -1.1102230246251565e-16,
+    "max_weight": 8.881784197001252e-16,
+    "min_dividend_yield": -2.0816681711721685e-17
+  },
+  "warnings": [
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero').",
+    "Multistart Sharpe optimization does not certify a global maximum."
+  ],
+  "factor_betas": null,
+  "factor_window": null
+}

@@ -1,0 +1,61 @@
+{
+  "optimization_strategy": "equal_weights",
+  "allocation_changes": [
+    {
+      "ticker": "AAA",
+      "security_name": "Synthetic Asset A",
+      "current_weight": 25.0,
+      "optimized_weight": 50.0,
+      "change": 25.0
+    },
+    {
+      "ticker": "BBB",
+      "security_name": "Synthetic Asset B",
+      "current_weight": 75.0,
+      "optimized_weight": 50.0,
+      "change": -25.0
+    }
+  ],
+  "window": {
+    "start_date": "2025-01-02",
+    "end_date": "2025-01-03",
+    "observations": 2
+  },
+  "methodology": {
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "error"
+  },
+  "solver": {
+    "method": "closed_form",
+    "status": "optimal"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.4137479936343691,
+      "volatility": 0.008418729120241369,
+      "sharpe_ratio": 41.15823125451335,
+      "max_drawdown": 0.0,
+      "dividend_yield": null
+    },
+    "optimized_portfolio": {
+      "cagr": 0.5526744951008609,
+      "volatility": 0.05051237472144822,
+      "sharpe_ratio": 8.73053390247253,
+      "max_drawdown": 0.0005,
+      "dividend_yield": null
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": 0.5,
+    "max_weight": 0.5
+  },
+  "warnings": [
+    "Portfolio dividend yield is unavailable; missing for: AAA, BBB."
+  ],
+  "factor_betas": null,
+  "factor_window": null
+}

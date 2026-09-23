@@ -1,0 +1,59 @@
+{
+  "optimization_strategy": "risk_parity",
+  "allocation_changes": [
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 25.0,
+      "optimized_weight": 20.124228480118077,
+      "change": -4.875771519881923
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 75.0,
+      "optimized_weight": 79.87577151988192,
+      "change": 4.875771519881923
+    }
+  ],
+  "window": {
+    "start_date": "2007-07-26",
+    "end_date": "2026-05-27",
+    "observations": 4739
+  },
+  "methodology": {
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "error"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.04091989401471116,
+      "volatility": 0.06886625302213413,
+      "sharpe_ratio": 0.6168710131450089,
+      "max_drawdown": 0.20948562009218885,
+      "dividend_yield": 0.03489
+    },
+    "optimized_portfolio": {
+      "cagr": 0.039159668839698084,
+      "volatility": 0.06258810744168876,
+      "sharpe_ratio": 0.6451246153976007,
+      "max_drawdown": 0.19500065713911602,
+      "dividend_yield": 0.03583589967485709
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": 0.20124228480118078,
+    "max_weight": 0.20124228480118078
+  },
+  "warnings": [],
+  "factor_betas": null,
+  "factor_window": null
+}
