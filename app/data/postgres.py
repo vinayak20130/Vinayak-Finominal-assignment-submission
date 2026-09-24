@@ -6,6 +6,7 @@ import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import InterfaceError, OperationalError, ProgrammingError
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 
 from app.data.market_data import AnnualReturn, Security, select_known
 from app.data.tables import (
@@ -66,7 +67,7 @@ class PostgresMarketData:
         try:
             with self._engine.connect() as connection:
                 return connection.execute(query).all()
-        except (OperationalError, InterfaceError) as exc:
+        except (OperationalError, InterfaceError, PoolTimeoutError) as exc:
             raise DataUnavailableError(
                 "Market data is temporarily unavailable."
             ) from exc
