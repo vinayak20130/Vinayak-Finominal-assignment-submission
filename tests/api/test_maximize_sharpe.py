@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+from tests.api.support import post
 
 
 @pytest.fixture
@@ -29,8 +28,7 @@ def body():
 
 
 def test_sharpe_endpoint(body):
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 200, response.text
     result = response.json()
     weights = [item["optimized_weight"] for item in result["allocation_changes"]]
@@ -43,8 +41,7 @@ def test_sharpe_endpoint(body):
 
 def test_constrained_sharpe_endpoint(body):
     body["constraints"] = {"min_dividend_yield": 0.025}
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 200, response.text
     result = response.json()
     assert result["metrics"]["optimized_portfolio"]["dividend_yield"] >= 0.025 - 1e-8
@@ -54,7 +51,6 @@ def test_undefined_ratio_is_clear_validation_error(body):
     for security in body["securities"]:
         for observation in security["returns"]:
             observation["return"] = 0
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "invalid_input"

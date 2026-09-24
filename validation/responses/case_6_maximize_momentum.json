@@ -47,7 +47,7 @@
     "annualization_factor": 252,
     "rebalancing": "each_observation",
     "risk_free_rate": 0.0,
-    "missing_dividend_yield": "error"
+    "missing_dividend_yield": "zero"
   },
   "solver": {
     "method": "HiGHS",
@@ -59,14 +59,14 @@
       "volatility": 0.10870228566062105,
       "sharpe_ratio": 0.8195471670371077,
       "max_drawdown": 0.2228375849513795,
-      "dividend_yield": null
+      "dividend_yield": 0.020546000000000002
     },
     "optimized_portfolio": {
       "cagr": 0.08921768550244141,
       "volatility": 0.16716120596871795,
       "sharpe_ratio": 0.5953980236791367,
       "max_drawdown": 0.35724391954468193,
-      "dividend_yield": null
+      "dividend_yield": 0.02034
     }
   },
   "constraint_residuals": {
@@ -75,7 +75,7 @@
     "max_weight": 0.0
   },
   "warnings": [
-    "Portfolio dividend yield is unavailable; missing for: GLD."
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero')."
   ],
   "factor_betas": {
     "current_portfolio": {

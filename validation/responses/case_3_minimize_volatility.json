@@ -33,7 +33,7 @@
     "annualization_factor": 252,
     "rebalancing": "each_observation",
     "risk_free_rate": 0.0,
-    "missing_dividend_yield": "error"
+    "missing_dividend_yield": "zero"
   },
   "solver": {
     "method": "SLSQP",
@@ -45,14 +45,14 @@
       "volatility": 0.11754894046288067,
       "sharpe_ratio": 0.8060907974538924,
       "max_drawdown": 0.3366295139027999,
-      "dividend_yield": null
+      "dividend_yield": 0.017844
     },
     "optimized_portfolio": {
       "cagr": 0.03874393211132888,
       "volatility": 0.05011093281670676,
       "sharpe_ratio": 0.7837700579734436,
       "max_drawdown": 0.17390613192630322,
-      "dividend_yield": null
+      "dividend_yield": 0.03693102669773782
     }
   },
   "constraint_residuals": {
@@ -61,8 +61,23 @@
     "max_weight": 0.08787794965102325
   },
   "warnings": [
-    "Portfolio dividend yield is unavailable; missing for: GLD."
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero')."
   ],
-  "factor_betas": null,
-  "factor_window": null
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.06388957922536934,
+      "value": 0.16242190975787174,
+      "size": -0.14916729776079085
+    },
+    "optimized_portfolio": {
+      "momentum": 0.008538868629828309,
+      "value": -0.007665730013468549,
+      "size": -0.050947272723833884
+    }
+  },
+  "factor_window": {
+    "start_date": "2004-11-18",
+    "end_date": "2026-05-22",
+    "observations": 5411
+  }
 }

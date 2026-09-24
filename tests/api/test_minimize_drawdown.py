@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+from tests.api.support import post
 
 
 @pytest.fixture
@@ -27,8 +26,7 @@ def body():
 
 
 def test_drawdown_endpoint(body):
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 200, response.text
     result = response.json()
     weights = [row["optimized_weight"] for row in result["allocation_changes"]]
@@ -48,7 +46,6 @@ def test_drawdown_endpoint(body):
 def test_impossible_bounds(body):
     for security in body["securities"]:
         security["max_weight"] = 40
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "infeasible_constraints"

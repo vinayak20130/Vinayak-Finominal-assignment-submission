@@ -1,8 +1,8 @@
 """Request models for POST /optimize.
 
-Units: weights and weight bounds are percentages (20 means 20%). Returns, dividend
-yields, the risk-free rate, and portfolio-level constraints are decimals
-(0.025 means 2.5%).
+Securities are referenced by ticker; returns, names and dividend yields come from
+the database. Units: weights and weight bounds are percentages (20 means 20%);
+the risk-free rate and portfolio-level constraints are decimals (0.025 means 2.5%).
 """
 
 import datetime as dt
@@ -55,20 +55,13 @@ def _iso_date(value: object) -> dt.date:
 IsoDate = Annotated[dt.date, BeforeValidator(_iso_date)]
 
 
-class ReturnObservation(StrictModel):
-    date: IsoDate
-    # "return" is a Python keyword, so the field is aliased.
-    value: Number = Field(alias="return", ge=-1)
-
-
 class SecurityInput(StrictModel):
+    """A holding in the current portfolio. Its data comes from the database."""
+
     ticker: str
-    security_name: str
     current_weight: Percent
-    dividend_yield: NonNegative | None = None
     min_weight: Percent = 0
     max_weight: Percent = 100
-    returns: list[ReturnObservation] = Field(min_length=1)
 
     @field_validator("ticker")
     @classmethod
@@ -77,20 +70,10 @@ class SecurityInput(StrictModel):
             raise ValueError("Ticker must not be empty.")
         return value.strip().upper()
 
-    @field_validator("security_name")
-    @classmethod
-    def _strip_name(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("Security name must not be empty.")
-        return value.strip()
-
     @model_validator(mode="after")
-    def _check_security(self) -> "SecurityInput":
+    def _check_bounds(self) -> "SecurityInput":
         if self.min_weight > self.max_weight:
             raise ValueError("min_weight must not exceed max_weight.")
-        dates = [observation.date for observation in self.returns]
-        if len(dates) != len(set(dates)):
-            raise ValueError(f"Duplicate return dates for {self.ticker}.")
         return self
 
 
@@ -116,7 +99,7 @@ class CalculationSettings(StrictModel):
     risk_free_rate: Number = Field(default=0, gt=-1)
     start_date: IsoDate | None = None
     end_date: IsoDate | None = None
-    missing_dividend_yield: Literal["error", "zero"] = "error"
+    missing_dividend_yield: Literal["error", "zero"] = "zero"
 
     @model_validator(mode="after")
     def _check_window(self) -> "CalculationSettings":
@@ -126,13 +109,6 @@ class CalculationSettings(StrictModel):
 
 
 FactorName = Literal["momentum", "value", "size"]
-
-
-class FactorObservation(StrictModel):
-    date: IsoDate
-    momentum: Number
-    value: Number
-    size: Number
 
 
 class FactorObjective(StrictModel):
@@ -151,7 +127,6 @@ class OptimizationRequest(StrictModel):
     optimization_strategy: Strategy
     constraints: PortfolioConstraints = Field(default_factory=PortfolioConstraints)
     settings: CalculationSettings = Field(default_factory=CalculationSettings)
-    factor_returns: list[FactorObservation] | None = Field(default=None, min_length=5)
     factor_objective: FactorObjective | None = None
 
     @model_validator(mode="after")
@@ -160,17 +135,10 @@ class OptimizationRequest(StrictModel):
         if len(tickers) != len(set(tickers)):
             raise ValueError("Tickers must be unique.")
         if self.optimization_strategy == Strategy.OPTIMIZE_FACTOR_EXPOSURE:
-            if self.factor_returns is None or self.factor_objective is None:
-                raise ValueError(
-                    "optimize_factor_exposure requires factor_returns "
-                    "and factor_objective."
-                )
+            if self.factor_objective is None:
+                raise ValueError("optimize_factor_exposure requires factor_objective.")
         elif self.factor_objective is not None:
             raise ValueError("factor_objective requires optimize_factor_exposure.")
-        if self.factor_returns is not None:
-            dates = [row.date for row in self.factor_returns]
-            if len(dates) != len(set(dates)):
-                raise ValueError("Duplicate factor return dates.")
         total = sum(security.current_weight for security in self.securities)
         if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
             raise ValueError(f"Current weights must sum to 100 (got {total:g}).")

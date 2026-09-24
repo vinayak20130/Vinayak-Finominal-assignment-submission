@@ -1,9 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
 from app.schemas.request import Strategy
 from app.services.registry import STRATEGIES
+from tests.api.support import client, post
 
 DATES = ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07"]
 
@@ -30,11 +29,6 @@ def request_body():
         ],
         "optimization_strategy": "equal_weights",
     }
-
-
-def post(body):
-    with TestClient(app) as client:
-        return client.post("/optimize", json=body)
 
 
 def assert_error(response, status, code):
@@ -117,6 +111,8 @@ def test_tickers_are_normalized(request_body):
 
 
 def test_metrics_reported_for_both_portfolios(request_body):
+    # Under the strict policy a blank yield stays unknown.
+    request_body["settings"] = {"missing_dividend_yield": "error"}
     metrics = post(request_body).json()["metrics"]
 
     for portfolio in ("current_portfolio", "optimized_portfolio"):
@@ -134,12 +130,6 @@ def test_metrics_reported_for_both_portfolios(request_body):
         lambda body: body["securities"][1].update(ticker="aaa"),
         lambda body: body.update(securities=body["securities"][:1]),
         lambda body: body.update(optimization_strategy="maximize_returns"),
-        lambda body: body["securities"][0]["returns"][0].update({"return": True}),
-        lambda body: body["securities"][0]["returns"][0].update({"return": "0.01"}),
-        lambda body: body["securities"][0]["returns"][0].update({"return": -1.5}),
-        lambda body: body["securities"][0]["returns"][0].update(date="2025-1-02"),
-        lambda body: body["securities"][0]["returns"][0].update(date=20250102),
-        lambda body: body["securities"][0]["returns"][1].update(date="2025-01-02"),
         lambda body: body["securities"][0].update(min_weight=60, max_weight=40),
         lambda body: body["securities"][0].update(ticker="  "),
         lambda body: body.update(settings={"rebalancing": "annual"}),
@@ -163,11 +153,11 @@ def test_invalid_requests_are_rejected(request_body, mutate):
 
 
 def test_error_details_do_not_echo_input(request_body):
-    request_body["securities"][0]["returns"][0]["return"] = "bad"
+    request_body["securities"][0]["current_weight"] = "bad"
 
     error = assert_error(post(request_body), 422, "invalid_input")
 
-    assert error["details"][0]["field"] == "securities.0.returns.0.return"
+    assert error["details"][0]["field"] == "securities.0.current_weight"
     assert "input" not in error["details"][0]
 
 
@@ -215,6 +205,7 @@ def test_unattainable_yield_is_infeasible_for_equal_weights(request_body):
 def test_missing_yield_needed_by_constraint_is_an_error(request_body):
     request_body["securities"][0]["dividend_yield"] = 0.03
     request_body["constraints"] = {"min_dividend_yield": 0.01}
+    request_body["settings"] = {"missing_dividend_yield": "error"}
 
     error = assert_error(post(request_body), 422, "invalid_input")
 
@@ -239,8 +230,8 @@ def test_every_advertised_strategy_is_implemented():
 
 
 def test_malformed_json_names_the_body():
-    with TestClient(app) as client:
-        response = client.post(
+    with client() as api:
+        response = api.post(
             "/optimize",
             content=b"{not json",
             headers={"content-type": "application/json"},
@@ -252,9 +243,9 @@ def test_malformed_json_names_the_body():
 
 
 def test_routing_errors_use_the_error_envelope():
-    with TestClient(app) as client:
-        wrong_method = client.get("/optimize")
-        unknown_path = client.get("/does-not-exist")
+    with client() as api:
+        wrong_method = api.get("/optimize")
+        unknown_path = api.get("/does-not-exist")
 
     assert_error(wrong_method, 405, "method_not_allowed")
     assert "POST" in wrong_method.headers["allow"]

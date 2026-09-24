@@ -79,6 +79,21 @@
     "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero').",
     "Multistart Sharpe optimization does not certify a global maximum."
   ],
-  "factor_betas": null,
-  "factor_window": null
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.13157439837643392,
+      "value": 0.1651383870199605,
+      "size": -0.05760774676787524
+    },
+    "optimized_portfolio": {
+      "momentum": 0.09655722246924699,
+      "value": 0.11727432736361162,
+      "size": -0.07953255897636592
+    }
+  },
+  "factor_window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-22",
+    "observations": 3412
+  }
 }

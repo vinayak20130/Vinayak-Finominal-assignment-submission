@@ -26,7 +26,7 @@
     "annualization_factor": 252,
     "rebalancing": "each_observation",
     "risk_free_rate": 0.0,
-    "missing_dividend_yield": "error"
+    "missing_dividend_yield": "zero"
   },
   "solver": {
     "method": "SLSQP",
@@ -54,6 +54,21 @@
     "max_weight": 0.20124228480118078
   },
   "warnings": [],
-  "factor_betas": null,
-  "factor_window": null
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.02003823245787583,
+      "value": 0.08090092128725468,
+      "size": -0.07446834552170907
+    },
+    "optimized_portfolio": {
+      "momentum": 0.015987900502542177,
+      "value": 0.059052488799593024,
+      "size": -0.06725124888883358
+    }
+  },
+  "factor_window": {
+    "start_date": "2007-07-26",
+    "end_date": "2026-05-22",
+    "observations": 4737
+  }
 }

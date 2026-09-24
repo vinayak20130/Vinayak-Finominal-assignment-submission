@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+from tests.api.support import post
 
 
 @pytest.fixture
@@ -28,8 +27,7 @@ def body():
 
 
 def test_risk_parity_endpoint(body):
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 200, response.text
     result = response.json()
     weights = [row["optimized_weight"] for row in result["allocation_changes"]]
@@ -41,7 +39,6 @@ def test_risk_parity_endpoint(body):
 def test_infeasible_constraint_error(body):
     for security in body["securities"]:
         security["min_weight"] = 60
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "infeasible_constraints"

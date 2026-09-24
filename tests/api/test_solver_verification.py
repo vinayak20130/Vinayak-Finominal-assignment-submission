@@ -1,9 +1,8 @@
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
 
 from app.domain.problem import StrategyResult
-from app.main import app
+from tests.api.support import post
 
 
 @pytest.mark.parametrize(
@@ -36,7 +35,6 @@ def test_invalid_strategy_output_is_never_success(monkeypatch, weights):
             for ticker in ["AAA", "BBB"]
         ],
     }
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 500
     assert response.json()["error"]["code"] == "optimization_failed"

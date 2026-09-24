@@ -2,9 +2,8 @@ import copy
 import math
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+from tests.api.support import post
 
 
 @pytest.fixture
@@ -43,11 +42,6 @@ def body():
             ]
         ],
     }
-
-
-def post(body):
-    with TestClient(app) as client:
-        return client.post("/optimize", json=body)
 
 
 def test_maximum_momentum_has_correct_betas_and_separate_windows(body):
@@ -143,15 +137,11 @@ def test_requested_window_applies_to_factors(body):
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda b: b.pop("factor_returns"),
         lambda b: b.pop("factor_objective"),
         lambda b: b["factor_objective"].update(coefficients={}),
         lambda b: b["factor_objective"].update(coefficients={"momentum": 0}),
         lambda b: b["factor_objective"].update(coefficients={"unknown": 1}),
         lambda b: b["factor_objective"].update(direction="invalid"),
-        lambda b: b["factor_returns"][0].update(momentum=True),
-        lambda b: b["factor_returns"][0].update(value="0.1"),
-        lambda b: b["factor_returns"][0].update(date="2025-01-03"),
         lambda b: b.update(optimization_strategy="equal_weights"),
     ],
 )
@@ -160,6 +150,15 @@ def test_bad_factor_inputs(body, mutate):
     response = post(body)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "invalid_input"
+
+
+def test_factor_strategy_needs_factor_data(body):
+    del body["factor_returns"]
+
+    response = post(body)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "insufficient_data"
 
 
 def test_rank_failure(body):

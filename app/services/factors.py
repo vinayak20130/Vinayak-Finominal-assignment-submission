@@ -28,37 +28,31 @@ class FactorContext:
 
 
 def prepare_factors(
-    request: OptimizationRequest, aligned_funds: pd.DataFrame
-) -> FactorContext | None:
-    if request.factor_returns is None:
-        return None
-    factors = pd.DataFrame(
-        [
-            {
-                "date": observation.date,
-                **{factor: getattr(observation, factor) for factor in FACTOR_NAMES},
-            }
-            for observation in request.factor_returns
-        ]
-    )
-    factors["date"] = pd.to_datetime(factors["date"])
-    factors = factors.set_index("date").sort_index()
+    factor_table: pd.DataFrame, aligned_funds: pd.DataFrame, *, required: bool
+) -> tuple[FactorContext | None, list[str]]:
+    """Regress on dates shared by the funds and complete factor rows.
+
+    Betas are required for the factor strategy and best-effort otherwise: when the
+    data can't support a regression, report a warning instead of failing.
+    """
+    factors = factor_table.dropna().sort_index()
     common = aligned_funds.index.intersection(factors.index).sort_values()
-    if len(common) < 5:
-        raise InsufficientDataError("Factor regression requires five common dates.")
-    fund_values = aligned_funds.loc[common].to_numpy()
-    factor_values = factors.loc[common, list(FACTOR_NAMES)].to_numpy()
-    betas = regress_factors(fund_values, factor_values)[1:]
-    return FactorContext(
-        returns=fund_values,
-        factors=factor_values,
-        fund_betas=betas,
-        window=DataWindow(
-            start_date=common[0].date(),
-            end_date=common[-1].date(),
-            observations=len(common),
-        ),
+    try:
+        if len(common) < 5:
+            raise InsufficientDataError("Factor regression requires five common dates.")
+        fund_values = aligned_funds.loc[common].to_numpy()
+        factor_values = factors.loc[common, list(FACTOR_NAMES)].to_numpy()
+        betas = regress_factors(fund_values, factor_values)[1:]
+    except DataValidationError as exc:
+        if required:
+            raise
+        return None, [f"Factor betas unavailable: {exc}"]
+    window = DataWindow(
+        start_date=common[0].date(),
+        end_date=common[-1].date(),
+        observations=len(common),
     )
+    return FactorContext(fund_values, factor_values, betas, window), []
 
 
 def exposure_costs(request: OptimizationRequest, context: FactorContext) -> np.ndarray:

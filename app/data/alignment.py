@@ -14,7 +14,24 @@ def align_returns(
     start_date: date | str | None = None,
     end_date: date | str | None = None,
 ) -> pd.DataFrame:
-    """Return sorted common dates, with columns in the requested ticker order."""
+    """Validate a long-form return table, then align it with `align_table`."""
+    table = validate_return_table(returns)
+    wide = table.pivot(index="date", columns="ticker", values="total_return")
+    return align_table(wide, tickers, start_date=start_date, end_date=end_date)
+
+
+def align_table(
+    table: pd.DataFrame,
+    tickers: Sequence[str],
+    *,
+    start_date: date | str | None = None,
+    end_date: date | str | None = None,
+) -> pd.DataFrame:
+    """Common dates of the selected tickers from a wide date x ticker table.
+
+    A date counts only when every selected fund has a return on it; missing
+    returns are never filled. Columns follow the requested ticker order.
+    """
     selected = [normalize_identifier(ticker) for ticker in tickers]
     if not selected or len(selected) != len(set(selected)):
         raise DataValidationError("Select unique, nonempty tickers.")
@@ -22,22 +39,16 @@ def align_returns(
     end = parse_date(end_date) if end_date is not None else None
     if start is not None and end is not None and start > end:
         raise DataValidationError("Start date must not follow end date.")
-
-    table = validate_return_table(returns)
-    unknown = set(selected) - set(table["ticker"])
+    unknown = set(selected) - set(table.columns)
     if unknown:
         raise DataValidationError(f"Unknown tickers: {', '.join(sorted(unknown))}")
-    table = table[table["ticker"].isin(selected)]
+
+    aligned = table[selected].sort_index()
     if start is not None:
-        table = table[table["date"] >= start]
+        aligned = aligned[aligned.index >= start]
     if end is not None:
-        table = table[table["date"] <= end]
-    aligned = (
-        table.pivot(index="date", columns="ticker", values="total_return")
-        .reindex(columns=selected)
-        .dropna()
-        .sort_index()
-    )
+        aligned = aligned[aligned.index <= end]
+    aligned = aligned.dropna()
     if len(aligned) < 2:
         raise InsufficientDataError("At least two common return dates are required.")
     return aligned.copy()

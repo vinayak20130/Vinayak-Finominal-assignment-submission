@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+from tests.api.support import post
 
 
 def test_minimum_volatility_endpoint():
@@ -27,8 +26,7 @@ def test_minimum_volatility_endpoint():
             ]
         ],
     }
-    with TestClient(app) as client:
-        response = client.post("/optimize", json=body)
+    response = post(body)
     assert response.status_code == 200, response.text
     result = response.json()
     weights = [row["optimized_weight"] for row in result["allocation_changes"]]

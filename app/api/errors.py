@@ -12,11 +12,13 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.domain.errors import (
+    DataUnavailableError,
     DataValidationError,
     EqualWeightConflictError,
     InfeasibleConstraintsError,
     InsufficientDataError,
     OptimizationFailedError,
+    TickerNotFoundError,
     UndefinedMetricError,
 )
 
@@ -29,6 +31,8 @@ DOMAIN_ERRORS: dict[type[Exception], tuple[int, str]] = {
     UndefinedMetricError: (422, "invalid_input"),
     InfeasibleConstraintsError: (422, "infeasible_constraints"),
     EqualWeightConflictError: (422, "equal_weight_conflict"),
+    TickerNotFoundError: (404, "ticker_not_found"),
+    DataUnavailableError: (503, "data_unavailable"),
     OptimizationFailedError: (500, "optimization_failed"),
 }
 
