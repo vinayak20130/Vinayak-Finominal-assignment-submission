@@ -1,7 +1,8 @@
 """Request models for POST /optimize.
 
-Securities are referenced by ticker; returns, names and dividend yields come from
-the database. Units: weights and weight bounds are percentages (20 means 20%);
+Securities are referenced by ticker; callers can supply dated daily returns.
+Otherwise returns, names and dividend yields come from the database.
+Units: weights and weight bounds are percentages (20 means 20%);
 the risk-free rate and portfolio-level constraints are decimals (0.025 means 2.5%).
 """
 
@@ -55,13 +56,20 @@ def _iso_date(value: object) -> dt.date:
 IsoDate = Annotated[dt.date, BeforeValidator(_iso_date)]
 
 
+class ReturnObservation(StrictModel):
+    date: IsoDate
+    value: Number = Field(alias="return", ge=-1)
+
+
 class SecurityInput(StrictModel):
-    """A holding in the current portfolio. Its data comes from the database."""
+    """A known holding with optional request-specific daily returns."""
 
     ticker: str
     current_weight: Percent
     min_weight: Percent = 0
     max_weight: Percent = 100
+    returns: list[ReturnObservation] | None = Field(default=None, min_length=1)
+    dividend_yield: NonNegative | None = None
 
     @field_validator("ticker")
     @classmethod
@@ -74,6 +82,10 @@ class SecurityInput(StrictModel):
     def _check_bounds(self) -> "SecurityInput":
         if self.min_weight > self.max_weight:
             raise ValueError("min_weight must not exceed max_weight.")
+        if self.returns is not None:
+            dates = [row.date for row in self.returns]
+            if len(dates) != len(set(dates)):
+                raise ValueError("Return dates must be unique for each security.")
         return self
 
 
@@ -93,6 +105,7 @@ class PortfolioConstraints(StrictModel):
 
 
 class CalculationSettings(StrictModel):
+    calculation_profile: Literal["standard", "reference"] = "standard"
     frequency: Literal["daily"] = "daily"
     annualization_factor: int = Field(default=252, strict=True, gt=0)
     rebalancing: Literal["each_observation"] = "each_observation"
@@ -103,6 +116,11 @@ class CalculationSettings(StrictModel):
 
     @model_validator(mode="after")
     def _check_window(self) -> "CalculationSettings":
+        if (
+            self.calculation_profile == "reference"
+            and "risk_free_rate" not in self.model_fields_set
+        ):
+            self.risk_free_rate = 0.0175
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError("start_date must not follow end_date.")
         return self
@@ -139,6 +157,9 @@ class OptimizationRequest(StrictModel):
                 raise ValueError("optimize_factor_exposure requires factor_objective.")
         elif self.factor_objective is not None:
             raise ValueError("factor_objective requires optimize_factor_exposure.")
+        supplied = [security.returns is not None for security in self.securities]
+        if any(supplied) and not all(supplied):
+            raise ValueError("Supply returns for every security or omit them for all.")
         total = sum(security.current_weight for security in self.securities)
         if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
             raise ValueError(f"Current weights must sum to 100 (got {total:g}).")

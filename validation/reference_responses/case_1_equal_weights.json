@@ -1,0 +1,77 @@
+{
+  "optimization_strategy": "equal_weights",
+  "allocation_changes": [
+    {
+      "ticker": "IEFA",
+      "security_name": "iShares Core MSCI EAFE ETF",
+      "current_weight": 25,
+      "optimized_weight": 50,
+      "change": 25
+    },
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 75,
+      "optimized_weight": 50,
+      "change": -25
+    }
+  ],
+  "window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-27",
+    "observations": 3415
+  },
+  "methodology": {
+    "calculation_profile": "reference",
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0175,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "closed_form",
+    "status": "optimal"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.1351356475480738,
+      "volatility": 0.1625198751392209,
+      "sharpe_ratio": 0.7548860797083343,
+      "max_drawdown": 0.3359546691715537,
+      "dividend_yield": 0.0155975
+    },
+    "optimized_portfolio": {
+      "cagr": 0.11892529993268597,
+      "volatility": 0.16035335611150428,
+      "sharpe_ratio": 0.6732290404910279,
+      "max_drawdown": 0.336926857178157,
+      "dividend_yield": 0.021324999999999997
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0,
+    "min_weight": 0.5,
+    "max_weight": 0.5
+  },
+  "warnings": [
+    "Reference profile excludes the start-date return and treats missing observations inside the shared history as unchanged prices."
+  ],
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.1723999307283986,
+      "value": 0.2434894743328593,
+      "size": -0.16962013407394194
+    },
+    "optimized_portfolio": {
+      "momentum": 0.17149530404420177,
+      "value": 0.27547841451078775,
+      "size": -0.1326197029199168
+    }
+  },
+  "factor_window": {
+    "start_date": "2012-10-24",
+    "end_date": "2026-05-22",
+    "observations": 3413
+  }
+}

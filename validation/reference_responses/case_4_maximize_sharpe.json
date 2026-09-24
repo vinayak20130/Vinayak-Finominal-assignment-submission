@@ -1,0 +1,100 @@
+{
+  "optimization_strategy": "maximize_sharpe_ratio",
+  "allocation_changes": [
+    {
+      "ticker": "IEFA",
+      "security_name": "iShares Core MSCI EAFE ETF",
+      "current_weight": 20,
+      "optimized_weight": 0,
+      "change": -20
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 20,
+      "optimized_weight": 30.586644449579282,
+      "change": 10.586644449579282
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 20,
+      "optimized_weight": 8.496085020168186e-16,
+      "change": -20
+    },
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 20,
+      "optimized_weight": 9.252175338779477e-15,
+      "change": -19.99999999999999
+    },
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 20,
+      "optimized_weight": 69.41335555042072,
+      "change": 49.41335555042072
+    }
+  ],
+  "window": {
+    "start_date": "2012-10-23",
+    "end_date": "2026-05-27",
+    "observations": 3415
+  },
+  "methodology": {
+    "calculation_profile": "reference",
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0175,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.08782847387659251,
+      "volatility": 0.10862615564594715,
+      "sharpe_ratio": 0.6698439211953101,
+      "max_drawdown": 0.22283758495137956,
+      "dividend_yield": 0.020546000000000002
+    },
+    "optimized_portfolio": {
+      "cagr": 0.13144837035547574,
+      "volatility": 0.12921721968976235,
+      "sharpe_ratio": 0.8863953465073882,
+      "max_drawdown": 0.2511752189614442,
+      "dividend_yield": 0.006851098192826527
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0,
+    "min_weight": 0,
+    "max_weight": 0.3058664444957928
+  },
+  "warnings": [
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero').",
+    "Reference profile excludes the start-date return and treats missing observations inside the shared history as unchanged prices.",
+    "Reference profile uses the current allocation as a single SLSQP start and ftol=1e-6; this does not certify a global optimum."
+  ],
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.13158642430536063,
+      "value": 0.1648822048651042,
+      "size": -0.05607210595668163
+    },
+    "optimized_portfolio": {
+      "momentum": 0.1633426394293933,
+      "value": 0.13731871942052656,
+      "size": -0.13036164974127032
+    }
+  },
+  "factor_window": {
+    "start_date": "2012-10-24",
+    "end_date": "2026-05-22",
+    "observations": 3413
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "source": "Finominal allocation snapshot, 2026-09-24",
+  "request": {
+    "securities": [
+      {
+        "ticker": "IEFA",
+        "current_weight": 25
+      },
+      {
+        "ticker": "SPY",
+        "current_weight": 75
+      }
+    ],
+    "optimization_strategy": "equal_weights",
+    "settings": {
+      "calculation_profile": "reference",
+      "start_date": "2012-10-23",
+      "end_date": "2026-05-27"
+    }
+  },
+  "reference_response": {
+    "data": {
+      "optimizedPortfolio": [
+        {
+          "ticker": "IEFA",
+          "optimizedWeight": 0.5
+        },
+        {
+          "ticker": "SPY",
+          "optimizedWeight": 0.5
+        }
+      ]
+    }
+  }
+}

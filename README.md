@@ -1,8 +1,8 @@
 # Portfolio Optimizer API
 
 A FastAPI service that optimizes portfolio weights using market data stored in
-PostgreSQL. Requests name securities by ticker; the service reads their daily
-returns, names, dividend yields and factor returns from the database.
+PostgreSQL. Requests name securities by ticker and may supply daily returns.
+Names, dividend yields, factor returns, and default fund returns come from the database.
 
 ## Quick start (Docker required)
 
@@ -86,8 +86,20 @@ by 5.1 percentage points.
 | `GET /health` | Liveness |
 
 Each security in the request has `ticker`, `current_weight`, and optional
-`min_weight`/`max_weight`. Weights are percentages (20 means 20%); constraints are
+`min_weight`/`max_weight` and `dividend_yield` overrides. Yield overrides are
+nonnegative decimals, apply only to the request, and are identified in response
+warnings. Omit them to use workbook yields. Weights are percentages (20 means 20%); constraints are
 decimals (0.025 means 2.5%).
+
+To supply returns, add `returns` to **every** security, for example:
+`"returns": [{"date": "2025-01-02", "return": 0.01},
+{"date": "2025-01-03", "return": -0.005}]`.
+Dates must be unique per security; values are finite decimal daily total returns
+(at least -1). The service intersects dates and applies the requested date window.
+At least two common dates are required. Supplied returns are used only for that
+request and do not change PostgreSQL. Tickers must still exist in the database,
+which supplies names, yields, and the three factor histories.
+Omit returns from every security to use the stored fund histories.
 
 - **Strategies:** `equal_weights`, `risk_parity`, `minimize_drawdown`,
   `minimize_volatility`, `maximize_sharpe_ratio`, `optimize_factor_exposure`. The last
@@ -125,6 +137,77 @@ running:
 uv run --locked python -m scripts.run_scenarios
 ```
 
+## Screenshots
+
+Manual API runs in Postman and the corresponding Finominal allocation tables.
+Expand each scenario to view both captures. Use the linked reference requests
+to reproduce the date windows and calculation settings.
+
+### Equal weights — IEFA 25%, SPY 75%
+
+[Request JSON](examples/reference/case_1_equal_weights.json) ·
+[Complete API response](validation/reference_responses/case_1_equal_weights.json)
+
+Both allocation tables show IEFA 50% and SPY 50%.
+
+<details>
+<summary>View API and website screenshots</summary>
+
+**API request and response — HTTP 200**
+
+![Postman equal-weight request and response showing IEFA and SPY at 50% each](1stTest.png)
+
+**Finominal allocation table**
+
+![Finominal allocation table showing IEFA and SPY at 50% each](1sttestweb.png)
+
+</details>
+
+### Minimum volatility — SPY 60%, AGG 30%, GLD 10%
+
+[Request JSON](examples/reference/case_3_minimize_volatility.json) ·
+[Complete API response](validation/reference_responses/case_3_minimize_volatility.json)
+
+The API allocations round to the website's SPY 6.94%, AGG 91.11%, GLD 1.95%.
+
+<details>
+<summary>View API and website screenshots</summary>
+
+**API request and allocation response — HTTP 200**
+
+![Postman minimum-volatility request and optimized allocations for SPY, AGG and GLD](2ndTest.png)
+
+**Finominal allocation table**
+
+![Finominal minimum-volatility allocations: SPY 6.94%, AGG 91.11% and GLD 1.95%](2ndtestweb.png)
+
+</details>
+
+### Maximum Sharpe — IEFA, GLD, AGG, VEA and SPY at 20% each
+
+[Request JSON](examples/reference/case_4_maximize_sharpe.json) ·
+[Complete API response](validation/reference_responses/case_4_maximize_sharpe.json)
+
+The complete API response allocates approximately 30.5866% to GLD and 69.4134%
+to SPY, versus 30.60% and 69.40% on the website; the other weights are effectively
+zero. The largest difference is below 0.1 percentage points.
+
+<details>
+<summary>View API and website screenshots</summary>
+
+**API request, methodology and metrics — HTTP 200**
+
+![Postman maximum-Sharpe request with successful response, methodology and metrics](3rdTest.png)
+
+This capture is scrolled below the allocation rows; those are available in the
+complete API response linked above.
+
+**Finominal allocation table**
+
+![Finominal maximum-Sharpe allocations: GLD 30.60%, SPY 69.40%, and zero for IEFA, AGG and VEA](3rdtestweb.png)
+
+</details>
+
 ## Methodology
 
 - Dates are intersected for only the selected securities; missing returns are never
@@ -142,11 +225,46 @@ uv run --locked python -m scripts.run_scenarios
   bounds and portfolio constraints. Failing to find a solution (500) is kept distinct
   from proven infeasibility (422).
 
+## Calculation profiles
+
+The default `standard` profile uses the methodology above.
+The screenshot examples in `examples/reference/` select
+`settings.calculation_profile: "reference"`, with these conventions:
+
+- Exclude the initial price date's return and treat missing observations inside
+  the shared history as unchanged prices; never extrapolate outside that history.
+- Default to a 1.75% annual risk-free rate, which callers can override.
+- Use SLSQP from the current allocation with `ftol=1e-6` for volatility,
+  drawdown and Sharpe; verify all constraints before returning weights.
+- Use inverse-volatility allocation for risk parity. Unlike the standard profile,
+  this does not generally equalize covariance-based risk contributions.
+
+The reference case-5 request explicitly supplies updated dividend yields:
+IEFA 3.338%, GLD 0%, AGG 4.12%, VEA 2.122%, SPY 0.993%.
+Its allocation meets the 2.50% yield floor with those inputs, but yields 2.42846%
+with workbook yields. Stored workbook data is unchanged.
+
+Regenerate the screenshot examples' responses with:
+
+```bash
+uv run --locked python -m scripts.run_scenarios --examples examples/reference --out validation/reference_responses
+```
+
+## Tests and limitations
+
+Tests cover request validation, date alignment, allocation bounds, portfolio
+constraints, infeasible inputs, factor exposure and numerical regressions.
+Run the checks in the Development section before committing changes.
+
+Reference matching is not guaranteed for every date window. The five-fund Sharpe
+example covering 2018-01-02 through 2023-12-29 differs from the reference by
+0.1861 percentage points, above the assignment's 0.1-point tolerance.
+The three-factor bonus uses the supplied Momentum, Value and Size series; exact
+matching to a broader factor model is not expected.
+
 ## Deferred
 
 - Annual rebalancing, which is the live tool's default. The current results assume
   daily rebalancing.
 - A database-level test suite (the PostgreSQL layer is verified live).
 - Caching, authentication, rate limiting.
-
-These results have not yet been compared with the live Finominal tool.

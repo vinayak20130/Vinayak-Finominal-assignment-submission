@@ -1,0 +1,77 @@
+{
+  "optimization_strategy": "risk_parity",
+  "allocation_changes": [
+    {
+      "ticker": "VEA",
+      "security_name": "Vanguard Developed Markets Index Fund;ETF",
+      "current_weight": 25,
+      "optimized_weight": 20.122530455706595,
+      "change": -4.877469544293405
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 75,
+      "optimized_weight": 79.8774695442934,
+      "change": 4.877469544293405
+    }
+  ],
+  "window": {
+    "start_date": "2007-07-26",
+    "end_date": "2026-05-27",
+    "observations": 4738
+  },
+  "methodology": {
+    "calculation_profile": "reference",
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0175,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.04078150490826092,
+      "volatility": 0.0688711190204644,
+      "sharpe_ratio": 0.3629927300197767,
+      "max_drawdown": 0.20948562009218885,
+      "dividend_yield": 0.03489
+    },
+    "optimized_portfolio": {
+      "cagr": 0.03901096676356628,
+      "volatility": 0.0625896955197251,
+      "sharpe_ratio": 0.3656330684248692,
+      "max_drawdown": 0.19499905543725723,
+      "dividend_yield": 0.03583622909159292
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0,
+    "min_weight": 0.20122530455706597,
+    "max_weight": 0.2012253045570659
+  },
+  "warnings": [
+    "Reference profile excludes the start-date return and treats missing observations inside the shared history as unchanged prices."
+  ],
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.02006226902643042,
+      "value": 0.08097146762447746,
+      "size": -0.07453067581442337
+    },
+    "optimized_portfolio": {
+      "momentum": 0.016011444343237532,
+      "value": 0.05911812005051339,
+      "size": -0.06731344584111497
+    }
+  },
+  "factor_window": {
+    "start_date": "2007-07-27",
+    "end_date": "2026-05-22",
+    "observations": 4736
+  }
+}

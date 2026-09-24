@@ -1,0 +1,43 @@
+{
+  "source": "Finominal allocation snapshot, 2026-09-24",
+  "request": {
+    "securities": [
+      {
+        "ticker": "AGG",
+        "current_weight": 50
+      },
+      {
+        "ticker": "GLD",
+        "current_weight": 30
+      },
+      {
+        "ticker": "IEFA",
+        "current_weight": 20
+      }
+    ],
+    "optimization_strategy": "minimize_volatility",
+    "settings": {
+      "calculation_profile": "reference",
+      "start_date": "2020-01-02",
+      "end_date": "2020-12-31"
+    }
+  },
+  "reference_response": {
+    "data": {
+      "optimizedPortfolio": [
+        {
+          "ticker": "AGG",
+          "optimizedWeight": 0.9197
+        },
+        {
+          "ticker": "GLD",
+          "optimizedWeight": 0.0714
+        },
+        {
+          "ticker": "IEFA",
+          "optimizedWeight": 0.0089
+        }
+      ]
+    }
+  }
+}

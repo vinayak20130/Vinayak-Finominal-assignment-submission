@@ -1,0 +1,69 @@
+{
+  "source": "Finominal allocation snapshot, 2026-09-24",
+  "request": {
+    "securities": [
+      {
+        "ticker": "IEFA",
+        "current_weight": 20,
+        "min_weight": 5,
+        "max_weight": 40
+      },
+      {
+        "ticker": "GLD",
+        "current_weight": 20,
+        "min_weight": 5,
+        "max_weight": 40
+      },
+      {
+        "ticker": "AGG",
+        "current_weight": 20,
+        "min_weight": 5,
+        "max_weight": 40
+      },
+      {
+        "ticker": "VEA",
+        "current_weight": 20,
+        "min_weight": 5,
+        "max_weight": 40
+      },
+      {
+        "ticker": "SPY",
+        "current_weight": 20,
+        "min_weight": 5,
+        "max_weight": 40
+      }
+    ],
+    "optimization_strategy": "minimize_drawdown",
+    "settings": {
+      "calculation_profile": "reference",
+      "start_date": "2012-10-23",
+      "end_date": "2026-05-27"
+    }
+  },
+  "reference_response": {
+    "data": {
+      "optimizedPortfolio": [
+        {
+          "ticker": "IEFA",
+          "optimizedWeight": 0.05
+        },
+        {
+          "ticker": "GLD",
+          "optimizedWeight": 0.4
+        },
+        {
+          "ticker": "AGG",
+          "optimizedWeight": 0.4
+        },
+        {
+          "ticker": "VEA",
+          "optimizedWeight": 0.05
+        },
+        {
+          "ticker": "SPY",
+          "optimizedWeight": 0.1
+        }
+      ]
+    }
+  }
+}

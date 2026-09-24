@@ -1,0 +1,35 @@
+{
+  "source": "Finominal allocation snapshot, 2026-09-24",
+  "request": {
+    "securities": [
+      {
+        "ticker": "SPY",
+        "current_weight": 30
+      },
+      {
+        "ticker": "GLD",
+        "current_weight": 70
+      }
+    ],
+    "optimization_strategy": "maximize_sharpe_ratio",
+    "settings": {
+      "calculation_profile": "reference",
+      "start_date": "2012-10-23",
+      "end_date": "2026-05-27"
+    }
+  },
+  "reference_response": {
+    "data": {
+      "optimizedPortfolio": [
+        {
+          "ticker": "SPY",
+          "optimizedWeight": 0.694
+        },
+        {
+          "ticker": "GLD",
+          "optimizedWeight": 0.306
+        }
+      ]
+    }
+  }
+}

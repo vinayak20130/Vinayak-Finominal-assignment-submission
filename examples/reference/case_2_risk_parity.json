@@ -1,0 +1,18 @@
+{
+  "securities": [
+    {
+      "ticker": "VEA",
+      "current_weight": 25
+    },
+    {
+      "ticker": "AGG",
+      "current_weight": 75
+    }
+  ],
+  "optimization_strategy": "risk_parity",
+  "settings": {
+    "calculation_profile": "reference",
+    "start_date": "2007-07-26",
+    "end_date": "2026-05-27"
+  }
+}

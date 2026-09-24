@@ -1,0 +1,86 @@
+{
+  "optimization_strategy": "minimize_volatility",
+  "allocation_changes": [
+    {
+      "ticker": "SPY",
+      "security_name": "State Street SPDR S&P 500 ETF Trust",
+      "current_weight": 60,
+      "optimized_weight": 6.939129895018659,
+      "change": -53.06087010498134
+    },
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 30,
+      "optimized_weight": 91.11421334515735,
+      "change": 61.11421334515735
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 10,
+      "optimized_weight": 1.9466567598239888,
+      "change": -8.05334324017601
+    }
+  ],
+  "window": {
+    "start_date": "2004-11-18",
+    "end_date": "2026-05-27",
+    "observations": 5412
+  },
+  "methodology": {
+    "calculation_profile": "reference",
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0175,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "SLSQP",
+    "status": "converged"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.09177961990198066,
+      "volatility": 0.11755974185104809,
+      "sharpe_ratio": 0.6582204645467924,
+      "max_drawdown": 0.3366295139027999,
+      "dividend_yield": 0.017844
+    },
+    "optimized_portfolio": {
+      "cagr": 0.03881998631521894,
+      "volatility": 0.05011575261500739,
+      "sharpe_ratio": 0.4389773547983303,
+      "max_drawdown": 0.17383655220732547,
+      "dividend_yield": 0.03689368050400387
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0,
+    "min_weight": 0.01946656759823989,
+    "max_weight": 0.08885786654842642
+  },
+  "warnings": [
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero').",
+    "Reference profile excludes the start-date return and treats missing observations inside the shared history as unchanged prices.",
+    "Reference profile uses the current allocation as a single SLSQP start and ftol=1e-6; this does not certify a global optimum."
+  ],
+  "factor_betas": {
+    "current_portfolio": {
+      "momentum": 0.06389231142135697,
+      "value": 0.1624235029040557,
+      "size": -0.14916077474580647
+    },
+    "optimized_portfolio": {
+      "momentum": 0.008683063609000117,
+      "value": -0.007623095563907077,
+      "size": -0.050960874719598336
+    }
+  },
+  "factor_window": {
+    "start_date": "2004-11-19",
+    "end_date": "2026-05-22",
+    "observations": 5410
+  }
+}

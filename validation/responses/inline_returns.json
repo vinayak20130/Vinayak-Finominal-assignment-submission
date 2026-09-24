@@ -1,0 +1,63 @@
+{
+  "optimization_strategy": "equal_weights",
+  "allocation_changes": [
+    {
+      "ticker": "AGG",
+      "security_name": "iShares Core US Aggregate Bond ETF",
+      "current_weight": 50.0,
+      "optimized_weight": 50.0,
+      "change": 0.0
+    },
+    {
+      "ticker": "GLD",
+      "security_name": "SPDR Gold Shares",
+      "current_weight": 50.0,
+      "optimized_weight": 50.0,
+      "change": 0.0
+    }
+  ],
+  "window": {
+    "start_date": "2026-05-26",
+    "end_date": "2026-05-27",
+    "observations": 2
+  },
+  "methodology": {
+    "calculation_profile": "standard",
+    "frequency": "daily",
+    "annualization_factor": 252,
+    "rebalancing": "each_observation",
+    "risk_free_rate": 0.0,
+    "missing_dividend_yield": "zero"
+  },
+  "solver": {
+    "method": "closed_form",
+    "status": "optimal"
+  },
+  "metrics": {
+    "current_portfolio": {
+      "cagr": 0.2831623969285772,
+      "volatility": 0.10102474944289642,
+      "sharpe_ratio": 2.4944382578492936,
+      "max_drawdown": 0.0035,
+      "dividend_yield": 0.01987
+    },
+    "optimized_portfolio": {
+      "cagr": 0.2831623969285772,
+      "volatility": 0.10102474944289642,
+      "sharpe_ratio": 2.4944382578492936,
+      "max_drawdown": 0.0035,
+      "dividend_yield": 0.01987
+    }
+  },
+  "constraint_residuals": {
+    "weights_sum_to_one": 0.0,
+    "min_weight": 0.5,
+    "max_weight": 0.5
+  },
+  "warnings": [
+    "Missing dividend yield treated as 0 for: GLD (settings.missing_dividend_yield='zero').",
+    "Factor betas unavailable: Factor regression requires five common dates."
+  ],
+  "factor_betas": null,
+  "factor_window": null
+}

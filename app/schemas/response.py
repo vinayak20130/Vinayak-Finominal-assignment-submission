@@ -25,6 +25,7 @@ class DataWindow(BaseModel):
 
 
 class Methodology(BaseModel):
+    calculation_profile: str = "standard"
     frequency: str
     annualization_factor: int
     rebalancing: str

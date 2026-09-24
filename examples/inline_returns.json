@@ -1,0 +1,33 @@
+{
+  "securities": [
+    {
+      "ticker": "AGG",
+      "current_weight": 50,
+      "returns": [
+        {
+          "date": "2026-05-26",
+          "return": 0.001
+        },
+        {
+          "date": "2026-05-27",
+          "return": -0.002
+        }
+      ]
+    },
+    {
+      "ticker": "GLD",
+      "current_weight": 50,
+      "returns": [
+        {
+          "date": "2026-05-26",
+          "return": 0.01
+        },
+        {
+          "date": "2026-05-27",
+          "return": -0.005
+        }
+      ]
+    }
+  ],
+  "optimization_strategy": "equal_weights"
+}
