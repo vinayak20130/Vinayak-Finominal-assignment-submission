@@ -20,3 +20,11 @@ class EqualWeightConflictError(ValueError):
 
 class OptimizationFailedError(RuntimeError):
     """No verified feasible solution was found; infeasibility is not proven."""
+
+
+class TickerNotFoundError(LookupError):
+    """A requested ticker is not in the market data."""
+
+
+class DataUnavailableError(RuntimeError):
+    """The market data store cannot be reached."""
