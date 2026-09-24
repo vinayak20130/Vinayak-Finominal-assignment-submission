@@ -1,46 +1,51 @@
 # Portfolio Optimizer API
 
-Python REST API for the Finominal backend assignment.
+A FastAPI service that optimizes portfolio weights using market data stored in
+PostgreSQL. Requests name securities by ticker; the service reads their daily
+returns, names, dividend yields and factor returns from the database.
 
-## Current status
-
-Implemented: workbook validation, date alignment, core portfolio metrics, and
-`POST /optimize` with all five required strategies (`equal_weights`,
-`risk_parity`, `minimize_drawdown`, `minimize_volatility`, and
-`maximize_sharpe_ratio`) plus the optional `optimize_factor_exposure` strategy
-with Momentum, Value, and Size factor betas.
-Reference-tool comparisons have not been performed.
-
-## Setup
-
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run
-these commands from the repository root:
+## Quick start (Docker required)
 
 ```bash
-uv python install 3.12
+docker compose up --build
+```
+
+This starts three services:
+
+- `db`: PostgreSQL 17;
+- `migrate`: creates the schema, then loads `Data.xlsx`, and exits;
+- `api`: starts once `migrate` has succeeded.
+
+Once it's running:
+
+- Interactive docs, with ready-made examples: http://127.0.0.1:8000/docs
+- Health check: `curl http://127.0.0.1:8000/health`
+
+```bash
+curl http://127.0.0.1:8000/optimize -H 'Content-Type: application/json' \
+  -d '{"securities":[{"ticker":"IEFA","current_weight":25},{"ticker":"SPY","current_weight":75}],"optimization_strategy":"equal_weights"}'
+```
+
+Stop with `docker compose down`; add `-v` to delete the database volume. The API is
+published on port 8000 and PostgreSQL on 5433; `API_PORT` and `DB_PORT` override
+them if those ports are taken.
+
+## Development
+
+```bash
 uv sync --locked
+docker compose up -d db
+uv run --locked alembic upgrade head
+uv run --locked python -m app.data.load
+uv run --locked uvicorn app.main:app --reload
 ```
 
-Python 3.12 is required. uv creates the local `.venv`; no global pip installation
-is needed. Both application and development dependencies are included.
+`DATABASE_URL` defaults to
+`postgresql+psycopg://portfolio:portfolio@localhost:5433/portfolio` (see
+`.env.example`). The API refuses to start if the database is unreachable, missing
+tables, or empty, and prints the command that fixes it.
 
-## Run
-
-```bash
-uv run --locked uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-- Interactive documentation: http://127.0.0.1:8000/docs
-- OpenAPI schema: http://127.0.0.1:8000/openapi.json
-- Liveness check: http://127.0.0.1:8000/health
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Expected response: `{"status":"ok"}`. This checks the running API only.
-
-## Checks
+Checks (no Docker needed; tests use an in-memory fake of the data source):
 
 ```bash
 uv run --locked pytest -q
@@ -50,111 +55,98 @@ uv run --locked ruff format --check .
 
 ## Data
 
-The supplied assignment document and `Data.xlsx` are kept locally and are not
-included in the repository. Neither file is needed to run the health endpoint.
-The tests use synthetic data and do not need the workbook.
+`python -m app.data.load [path]` validates the whole workbook first. It then
+replaces the data in one transaction, so readers never see a partial load. The
+workbook is the complete universe: securities missing from it are removed.
+Concurrent loads queue on an advisory lock, and every load is recorded in
+`data_loads` with the file's SHA-256 hash.
 
-## Optimize
+| Object | Contents |
+|---|---|
+| `securities` | ticker, name, dividend yield (NULL when blank in the source, e.g. GLD) |
+| `fund_daily_returns` | daily total returns per ticker (the source of truth) |
+| `factor_daily_returns` | daily Momentum, Value and Size factor returns |
+| `data_loads` | audit trail of loads |
+| view `fund_annual_returns` | calendar-year returns compounded from the daily rows; partial years flagged |
+| view `security_summary` | history range, since-inception and year-to-date returns |
 
-With the server running:
+The views compute on read (a few milliseconds at this size), so they can never be
+stale. The optimizer uses **daily** returns, not yearly ones: yearly data would hide
+intra-year losses and change the results. For example, SPY returned +18.4% in 2020
+but fell 33.7% within the year. Computing case 3 from yearly returns moves its weights
+by 5.1 percentage points.
 
-```bash
-curl --fail-with-body http://127.0.0.1:8000/optimize \
-  -H 'Content-Type: application/json' \
-  --data-binary @examples/equal-weights.json
-```
+## API
 
-This example returns 50% for each asset. Tickers are identifiers for supplied
-data; no external ticker lookup or database is used. Switch
-`optimization_strategy` to `risk_parity` to target equal risk contributions.
+| Endpoint | Purpose |
+|---|---|
+| `POST /optimize` | Optimize a portfolio (below) |
+| `GET /securities` | Available tickers with name, yield, history range, since-inception and YTD returns |
+| `GET /securities/{ticker}/annual-returns` | Calendar-year returns for one fund |
+| `GET /health` | Liveness |
 
-Assignment scenarios are committed as complete requests in `examples/`
-(`case_1_equal_weights.json` to `case_6_maximize_momentum.json`, plus
-`minimize_drawdown_demo.json`). They contain the full supplied return history,
-and case 6 also contains the supplied factor returns, so they run without the
-workbook. `tests/test_scenarios.py` runs every example and checks the
-assignment's acceptance rules. For example, case 2:
+Each security in the request has `ticker`, `current_weight`, and optional
+`min_weight`/`max_weight`. Weights are percentages (20 means 20%); constraints are
+decimals (0.025 means 2.5%).
 
-```bash
-curl --fail-with-body http://127.0.0.1:8000/optimize \
-  -H 'Content-Type: application/json' \
-  --data-binary @examples/case_2_risk_parity.json
-```
+- **Strategies:** `equal_weights`, `risk_parity`, `minimize_drawdown`,
+  `minimize_volatility`, `maximize_sharpe_ratio`, `optimize_factor_exposure`. The last
+  one needs `factor_objective`, e.g.
+  `{"direction": "maximize", "coefficients": {"momentum": 1}}`.
+- **`constraints`:** `min_cagr`, `min_volatility`, `max_volatility`, `max_drawdown`,
+  `min_dividend_yield`.
+- **`settings`:** `annualization_factor` (default 252), `risk_free_rate` (annual,
+  default 0), `start_date`/`end_date`, and `missing_dividend_yield`. Its default is
+  `zero`, which treats a blank yield as 0% and says so in `warnings`; `error` rejects
+  yield constraints on such funds instead.
 
-The API's response to every example is saved in `validation/responses/`. To
-regenerate them, start the server and run:
+The response contains `allocation_changes` (ticker, security name, current weight,
+optimized weight, change), the analysis window, methodology, solver status, current
+and optimized metrics, constraint residuals, warnings, and factor betas (Momentum,
+Value, Size) for both portfolios.
+
+Errors use `{"error": {"code": "...", "message": "...", "details": []}}`:
+
+| Status | Codes |
+|---|---|
+| 404 | `ticker_not_found` (the message lists the available tickers), `not_found` |
+| 405 | `method_not_allowed` |
+| 422 | `invalid_input`, `insufficient_data`, `infeasible_constraints`, `equal_weight_conflict` |
+| 500 | `optimization_failed` (not proven infeasible), `internal_error` |
+| 503 | `data_unavailable` (the database can't be reached) |
+
+## Assignment scenarios
+
+`examples/` holds the six assignment cases plus a Minimize Drawdown demo. The API's
+responses are saved in `validation/responses/`; regenerate them with the server
+running:
 
 ```bash
 uv run --locked python -m scripts.run_scenarios
 ```
 
-Only regenerating the request files needs the local `Data.xlsx`:
+## Methodology
 
-```bash
-uv run --locked python -m scripts.build_requests
-```
+- Dates are intersected for only the selected securities; missing returns are never
+  filled.
+- Fixed weights are rebalanced each observation; annualization is 252 days; volatility
+  and covariance use sample estimates (`ddof=1`).
+- CAGR uses the observation count divided by the annualization factor as elapsed years.
+  Drawdown includes the initial wealth. Sharpe uses arithmetic mean excess returns, with
+  the annual risk-free rate converted geometrically to a daily rate.
+- Risk parity equalizes fractional variance contributions. Min drawdown, min
+  volatility and max Sharpe use deterministic multistart SLSQP with analytic gradients
+  where available. Factor exposure is solved exactly as a linear program (HiGHS)
+  because portfolio betas are weighted fund betas.
+- Every result is re-verified independently: weights sum to 100%, no negatives,
+  bounds and portfolio constraints. Failing to find a solution (500) is kept distinct
+  from proven infeasibility (422).
 
-## Units and methodology
+## Deferred
 
-- Request/response weights and weight bounds are percentages: 20 means 20%.
-- Returns, yields, and portfolio constraints are decimals: 0.025 means 2.5%.
-- Returns are already total returns. No price conversion or dividend addition is applied.
-- Dates are sorted and intersected for only the selected securities; missing returns
-  are never filled with zero. At least two common observations are required.
-- Fixed weights rebalance each observation. Daily annualization defaults to 252.
-  Volatility/covariance use sample estimates (`ddof=1`).
-- CAGR uses observation count divided by annualization factor for elapsed years.
-  Drawdown includes initial wealth. Sharpe uses arithmetic excess returns and
-  defaults to a zero risk-free rate; undefined reporting metrics are null.
-- Risk parity minimizes squared deviations of fractional variance contributions
-  from equal shares using deterministic multistart SLSQP. Constrained solutions
-  may be approximate; the response reports this explicitly. Zero-risk assets
-  are rejected for this strategy because equal risk shares are undefined.
-- Minimize Drawdown minimizes the largest historical loss from a prior portfolio
-  wealth peak, using compounded portfolio returns. Deterministic multistart SLSQP
-  improves the search, but its nonsmooth objective means convergence does not
-  certify a global minimum. Failed solves never silently return a starting allocation.
-- Minimize Volatility minimizes annualized sample variance using its analytic
-  gradient. Positive objective scaling improves numerical conditioning without
-  changing the minimizer. With only linear constraints the problem is convex;
-  additional nonlinear constraints can introduce local optima.
-- Maximize Sharpe uses arithmetic mean excess return divided by sample volatility,
-  with an analytic gradient and deterministic multistart SLSQP. An annual effective
-  risk-free rate is converted to a period rate before calculation. Zero or near-zero
-  volatility is treated as undefined; no epsilon is added to fabricate a ratio.
-  Final Sharpe is independently recomputed from the portfolio return series.
-- Factor exposure regresses portfolio returns on Momentum, Value, and Size with an
-  intercept (OLS), using only dates shared by the selected funds and the supplied
-  factor returns; that window is reported separately as `factor_window`. With
-  fixed weights, portfolio betas are weighted fund betas, so the objective is
-  linear and solved exactly with HiGHS unless nonlinear portfolio constraints
-  apply. No diversification caps are added: 100% in the highest-beta fund is a
-  valid answer. Supplying `factor_returns` with any other strategy reports
-  `factor_betas` without changing its optimization.
-- SLSQP uses `ftol=1e-12`, `maxiter=2000`, and `eps=1e-8`.
-  Nonlinear slacks are scaled during solving and checked in original units
-  afterward, with an absolute feasibility tolerance of `1e-8`.
+- Annual rebalancing, which is the live tool's default. The current results assume
+  daily rebalancing.
+- A database-level test suite (the PostgreSQL layer is verified live).
+- Caching, authentication, rate limiting.
 
-Optional `min_weight`/`max_weight` belong to each security. Portfolio
-`constraints` accepts `min_cagr`, `min_volatility`, `max_volatility`,
-`max_drawdown`, and `min_dividend_yield`. Equal weights reports a conflict if
-its fixed allocation violates a requested constraint.
-
-`optimize_factor_exposure` requires `factor_returns` (a list of
-`{"date", "momentum", "value", "size"}` decimal returns, at least five dates) and
-`factor_objective`, for example
-`{"direction": "maximize", "coefficients": {"momentum": 1}}`. Coefficients weight
-several factors at once; omitted factors count as zero.
-
-Missing dividend yield remains unknown. A yield constraint requires known yields
-or explicit `settings.missing_dividend_yield: "zero"`, which produces a warning.
-The response includes actual analysis dates, methodology, solver status, metrics,
-constraint residuals, and warnings.
-
-Invalid input, equal-weight conflicts, and proven infeasibility return HTTP 422.
-Numerical failure returns HTTP 500 with `optimization_failed`; failing to find a
-nonlinear feasible allocation is not treated as proof that none exists.
-Errors use `{"error": {"code": "...", "message": "...", "details": []}}`.
-
-These financial conventions are local assumptions and have not been verified
-against the live reference tool.
+These results have not yet been compared with the live Finominal tool.

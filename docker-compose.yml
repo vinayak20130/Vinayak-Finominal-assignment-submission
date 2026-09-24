@@ -15,5 +15,25 @@ services:
       timeout: 5s
       retries: 30
 
+  migrate:
+    build: .
+    image: portfolio-optimizer:local
+    environment:
+      DATABASE_URL: postgresql+psycopg://portfolio:portfolio@db:5432/portfolio
+    command: sh -c "alembic upgrade head && python -m app.data.load"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: portfolio-optimizer:local
+    environment:
+      DATABASE_URL: postgresql+psycopg://portfolio:portfolio@db:5432/portfolio
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
